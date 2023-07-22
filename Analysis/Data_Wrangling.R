@@ -214,7 +214,7 @@ corrplot(as.matrix(corel1)[, c("Water_PC1", "Water_PC2", "Water_PC3")],
 names(Benth)
 
 HI_prop <- Benth %>% 
-  select(Agriculture_m, Highway_m, Waste.effluent, #  Solid_waste, 
+  dplyr::select(Agriculture_m, Highway_m, Waste.effluent,  Solid_waste, 
          Gravel_eff)
 
 pca2 <- prcomp(HI_prop, scale = T)
@@ -259,7 +259,10 @@ Benth_PCA2_ <- get_pca_ind(pca2)$coord[,1:3]
 Benth_PCA2 <- bind_cols(Benth_PCA1, Benth_PCA2_) %>% 
   rename(HI_PC1=Dim.1, HI_PC2=Dim.2, HI_PC3=Dim.3)
 
-write_csv(Benth_PCA2, "Data/Benth_PCA2.csv")
+
+Benth_PCA3 <- bind_cols(Benth_PCA2, Benth_PCA2_) 
+#  rename(HI_PC1=Dim.1, HI_PC2=Dim.2, HI_PC3=Dim.3)
+write_csv(Benth_PCA3, "Data/Benth_PCA2.csv")
 
 
 

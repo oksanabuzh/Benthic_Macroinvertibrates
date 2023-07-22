@@ -17,7 +17,7 @@ Benth_dat <- read_csv ("Data/Benth_PCA2.csv")
 str(Benth_dat)
 
 
-Benth <- Benth_dat %>%
+Benthic <- Benth_dat %>%
   full_join(FuncDiv, by="Sampling_site") %>% 
   mutate(System_id = as_factor(System_id), Year = as_factor(Year), 
          Country=as_factor(Country),
@@ -26,13 +26,13 @@ Benth <- Benth_dat %>%
          Agric_m_log=log(Agriculture_m),
          Highway_m_log=log(Highway_m)) 
 
-str(Benth)
+str(Benthic)
 
 # Human impact relations:
 
 #Depth----
 m1 <- lmer(Depth_cm ~ System_type +
-  (1|System_id:Year:Country), data = Benth)
+  (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m1) # heteroscedasticity  ->  transform response
@@ -40,7 +40,7 @@ qqnorm(resid(m1))
 qqline(resid(m1))
 
 m1.1 <- lmer(log(Depth_cm) ~ System_type +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m1.1) # heteroscedasticity  ->  transform response
@@ -58,7 +58,7 @@ cld(emmeans(m1.1, list(pairwise ~ System_type)),
     #  type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = (Depth_cm))) +
+ggplot(Benthic, aes(x = System_type, y = (Depth_cm))) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="System size (depth, cm)")+
@@ -69,7 +69,7 @@ ggplot(Benth, aes(x = System_type, y = (Depth_cm))) +
 
 ##HI_PC1----
 m2 <- lmer(HI_PC1 ~ System_type +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m2) # heteroscedasticity  ->  transform response
@@ -77,7 +77,7 @@ qqnorm(resid(m2))
 qqline(resid(m2))
 
 m2.1 <- lmer(log(HI_PC1+2) ~ System_type +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m2.1) # heteroscedasticity  ->  transform response
@@ -95,7 +95,7 @@ cld(emmeans(m2.1, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = log(HI_PC1+2))) +
+ggplot(Benthic, aes(x = System_type, y = log(HI_PC1+2))) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="HI_PC1")+
@@ -104,7 +104,7 @@ ggplot(Benth, aes(x = System_type, y = log(HI_PC1+2))) +
 
 ##HI_PC2----
 m3 <- lmer(HI_PC2 ~ System_type +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m3) # heteroscedasticity ?
@@ -126,7 +126,7 @@ cld(emmeans(m3.1, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = HI_PC2)) +
+ggplot(Benthic, aes(x = System_type, y = HI_PC2)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="HI_PC2")+
@@ -134,7 +134,7 @@ ggplot(Benth, aes(x = System_type, y = HI_PC2)) +
 
 ##HI_PC3----
 m4 <- lmer(HI_PC3 ~ System_type +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m4) # heteroscedasticity ?
@@ -154,7 +154,7 @@ cld(emmeans(m4, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = HI_PC3)) +
+ggplot(Benthic, aes(x = System_type, y = HI_PC3)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="HI_PC3")+
@@ -169,7 +169,7 @@ ggplot(Benth, aes(x = System_type, y = HI_PC3)) +
 m5 <- lmer(Water_PC1 ~ System_type +
              HI_PC1 + HI_PC2 + HI_PC3 +
              # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m5) # heteroscedasticity ?
@@ -197,7 +197,7 @@ cld(emmeans(m5, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = Water_PC1)) +
+ggplot(Benthic, aes(x = System_type, y = Water_PC1)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Water_PC1")+
@@ -210,7 +210,7 @@ ggplot(Benth, aes(x = System_type, y = Water_PC1)) +
 m5.1 <- lmer(Water_PC1 ~ #System_type +
              HI_PC1 + HI_PC2 + HI_PC3 +
              # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -230,14 +230,14 @@ plot_model(m5.1, type = "pred", terms = c( "HI_PC1"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("HI_PC1", "Water_PC1")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = HI_PC1, y = Water_PC1),  
              fill= "#0072B2", size=2, shape=21)
 
 #### use raw HI data----
 
-ggplot(Benth, aes(log(Highway_m), Water_PC1)) + geom_point()
-ggplot(Benth, aes(log(Agriculture_m), Water_PC1)) + geom_point()
+ggplot(Benthic, aes(log(Highway_m), Water_PC1)) + geom_point()
+ggplot(Benthic, aes(log(Agriculture_m), Water_PC1)) + geom_point()
 
 
 m5.2 <- lmer(Water_PC1 ~ #System_type +
@@ -245,7 +245,7 @@ m5.2 <- lmer(Water_PC1 ~ #System_type +
                 Waste.ef + 
                Gravel_ef + 
                Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 
@@ -267,7 +267,7 @@ plot_model(m5.2, type = "pred", terms = c( "Highway_m_log"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Highway distance", "Water_PC1")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Highway_m_log, y = Water_PC1),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -276,7 +276,7 @@ plot_model(m5.2, type = "pred", terms = c( "Agric_m_log"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Agrofields distance", "Water_PC1")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Agric_m_log, y = Water_PC1),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -291,7 +291,7 @@ cld(emmeans(m5.2, list(pairwise ~ Gravel_ef)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = Gravel_ef, y = Water_PC1)) +
+ggplot(Benthic, aes(x = Gravel_ef, y = Water_PC1)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="Gravel exploitation", y="Water_PC1")+
@@ -305,7 +305,7 @@ cld(emmeans(m5.2, list(pairwise ~ Waste.ef)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = Waste.ef, y = Water_PC1)) +
+ggplot(Benthic, aes(x = Waste.ef, y = Water_PC1)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="Waste effluent presence", y="Water_PC1")+
@@ -319,7 +319,7 @@ ggplot(Benth, aes(x = Waste.ef, y = Water_PC1)) +
 m6 <- lmer(Water_PC2 ~ System_type +
              HI_PC1 + HI_PC2 + HI_PC3 +
              # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m6) # heteroscedasticity ?
@@ -328,11 +328,11 @@ qqnorm(resid(m6))
 qqline(resid(m6))
 
 
-min(Benth$Water_PC2)
+min(Benthic$Water_PC2)
 m6.1 <- lmer(sqrt(Water_PC2+2.6) ~ System_type +
              HI_PC1 + HI_PC2 + HI_PC3 +
              # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m6.1) # heteroscedasticity ?
@@ -364,7 +364,7 @@ cld(emmeans(m6.1, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = Water_PC2)) +
+ggplot(Benthic, aes(x = System_type, y = Water_PC2)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Water_PC2")+
@@ -377,7 +377,7 @@ ggplot(Benth, aes(x = System_type, y = Water_PC2)) +
 m6.2 <- lmer(sqrt(Water_PC2+2.6) ~ #System_type +
                HI_PC1 + HI_PC2 + HI_PC3 +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -397,13 +397,13 @@ plot_model(m6.2, type = "pred", terms = c( "HI_PC2"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("HI_PC2", "Water_PC2")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = HI_PC2, y = Water_PC2),  
              fill= "#0072B2", size=2, shape=21)
 
 #### use raw HI data----
 
-ggplot(Benth, aes(log(Highway_m), Water_PC2)) + geom_point()
+ggplot(Benthic, aes(log(Highway_m), Water_PC2)) + geom_point()
 
 
 m6.3 <- lmer(Water_PC2 ~ #System_type +
@@ -411,7 +411,7 @@ m6.3 <- lmer(Water_PC2 ~ #System_type +
                Waste.ef + 
                Gravel_ef + 
                Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -433,7 +433,7 @@ cld(emmeans(m6.3, list(pairwise ~ Waste.ef)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = Waste.ef, y = Water_PC2)) +
+ggplot(Benthic, aes(x = Waste.ef, y = Water_PC2)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="Waste effluent presence", y="Water_PC2")+
@@ -446,7 +446,7 @@ ggplot(Benth, aes(x = Waste.ef, y = Water_PC2)) +
 m7.1 <- lmer(Water_PC3 ~ System_type +
              HI_PC1 + HI_PC2 + HI_PC3 +
              # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m7.1) # heteroscedasticity ?
@@ -475,7 +475,7 @@ cld(emmeans(m7.1, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = Water_PC3)) +
+ggplot(Benthic, aes(x = System_type, y = Water_PC3)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Water_PC3")+
@@ -488,7 +488,7 @@ ggplot(Benth, aes(x = System_type, y = Water_PC3)) +
 m7.2 <- lmer(Water_PC3 ~ #System_type +
                HI_PC1 + HI_PC2 + HI_PC3 +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -508,13 +508,13 @@ plot_model(m7.2, type = "pred", terms = c( "HI_PC2"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("HI_PC2", "Water_PC3")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = HI_PC2, y = Water_PC3),  
              fill= "#0072B2", size=2, shape=21)
 
 #### use raw HI data----
 
-ggplot(Benth, aes(log(Highway_m), Water_PC3)) + geom_point()
+ggplot(Benthic, aes(log(Highway_m), Water_PC3)) + geom_point()
 
 
 m7.3 <- lmer(Water_PC3 ~ #System_type +
@@ -522,7 +522,7 @@ m7.3 <- lmer(Water_PC3 ~ #System_type +
                Waste.ef + 
                Gravel_ef + 
                Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -544,7 +544,7 @@ cld(emmeans(m7.3, list(pairwise ~ Waste.ef)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = Waste.ef, y = Water_PC3)) +
+ggplot(Benthic, aes(x = Waste.ef, y = Water_PC3)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="Waste effluent presence", y="Water_PC3")+
@@ -560,7 +560,7 @@ cld(emmeans(m7.3, list(pairwise ~ Gravel_ef)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = Gravel_ef, y = Water_PC3)) +
+ggplot(Benthic, aes(x = Gravel_ef, y = Water_PC3)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="Gravel exploitation", y="Water_PC3")+
@@ -574,7 +574,7 @@ m8 <- lmer(Macrophyte_biomass ~ System_type +
                Water_PC1 + Water_PC2 + Water_PC3 +
                HI_PC1 + HI_PC2 + HI_PC3 +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m8) # heteroscedasticity ?
@@ -587,7 +587,7 @@ m8.1 <- lmer(log(Macrophyte_biomass+1) ~ System_type +
                HI_PC1 + HI_PC2 + HI_PC3 + 
                Water_PC1 + Water_PC2 + Water_PC3 +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m8.1) # heteroscedasticity ?
@@ -616,7 +616,7 @@ cld(emmeans(m8.1, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = Macrophyte_biomass)) +
+ggplot(Benthic, aes(x = System_type, y = Macrophyte_biomass)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Macrophyte biomass")+
@@ -630,7 +630,7 @@ m8.2 <- lmer(log(Macrophyte_biomass+1) ~ #System_type +
                HI_PC1 + HI_PC2 + HI_PC3 +
                Water_PC1 + Water_PC2 + Water_PC3 +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -642,14 +642,14 @@ summary(m8.2)
 car::Anova(m8.2)
 
 
-Benth$Macr_log <- log(Benth$Macrophyte_biomass+1)
-Benth$Water_PC2_s <- sqrt(Benth$Water_PC2+2.6)
+Benthic$Macr_log <- log(Benthic$Macrophyte_biomass+1)
+Benthic$Water_PC2_s <- sqrt(Benthic$Water_PC2+2.6)
 
 m8.3 <- lmer(Macr_log ~ #System_type +
                HI_PC1 + HI_PC2 + HI_PC3 +
                Water_PC1 + Water_PC2 + Water_PC3 +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 car::Anova(m8.3)
 
@@ -657,14 +657,14 @@ plot_model(m8.3, type = "pred", terms = c( "Water_PC2"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Water_PC2", "Macrophyte biomass")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Water_PC2, y = Macr_log),  
              fill= "#0072B2", size=2, shape=21)
 
 
 #### use raw HI data----
 
-ggplot(Benth, aes(log(Highway_m), Macrophyte_biomass)) + geom_point()
+ggplot(Benthic, aes(log(Highway_m), Macrophyte_biomass)) + geom_point()
 
 
 m8.3 <- lmer(log(Macrophyte_biomass+1) ~ 
@@ -673,7 +673,7 @@ m8.3 <- lmer(log(Macrophyte_biomass+1) ~
                Waste.ef + 
                Gravel_ef + 
                Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -695,7 +695,7 @@ m9 <- lmer(Fish_abundance ~ System_type +
              Water_PC1 + Water_PC2 + Water_PC3 +
              Macrophyte_biomass +
              # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benth)
+             (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m9) # heteroscedasticity ?
@@ -703,14 +703,14 @@ check_heteroscedasticity(m9)
 qqnorm(resid(m9))
 qqline(resid(m9))
 
-min(Benth$Fish_abundance)
+min(Benthic$Fish_abundance)
 
 m9.1 <- lmer(log(Fish_abundance+9) ~ System_type +
                HI_PC1 + HI_PC2 + HI_PC3 + 
                Water_PC1 + Water_PC2 + Water_PC3 +
                Macrophyte_biomass +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m9.1) 
@@ -739,7 +739,7 @@ cld(emmeans(m9.1, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = Fish_abundance)) +
+ggplot(Benthic, aes(x = System_type, y = Fish_abundance)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Fish abundance")+
@@ -750,11 +750,11 @@ ggplot(Benth, aes(x = System_type, y = Fish_abundance)) +
 ####  remove System_type----
 
 m9.2 <- lmer(log(Fish_abundance+9) ~ # System_type +
-               HI_PC1 + HI_PC2 + HI_PC3 +
-               Water_PC1 + Water_PC2 + Water_PC3 +
-               Macrophyte_biomass +
+                HI_PC1 + HI_PC2 + HI_PC3 +
+                 Water_PC1 + Water_PC2 + Water_PC3 +
+                 Macrophyte_biomass +
                # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benth)
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -769,17 +769,17 @@ plot_model(m9.2, type = "pred", terms = c( "Macrophyte_biomass"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Macrophyte biomass", "Fish abundance")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Macrophyte_biomass, y = Fish_abundance),  
              fill= "#0072B2", size=2, shape=21)
 
 
 #### use raw HI data----
 
-ggplot(Benth, aes(log(Highway_m), Fish_abundance)) + geom_point()
+ggplot(Benthic, aes(log(Highway_m), Fish_abundance)) + geom_point()
 
 
-Benth$Fish_log <-  log(Benth$Fish_abundance+9)
+Benthic$Fish_log <-  log(Benthic$Fish_abundance+9)
 
 
 m9.3 <- lmer(Fish_log ~ 
@@ -787,8 +787,9 @@ m9.3 <- lmer(Fish_log ~
                # HI_PC1 + HI_PC2 + HI_PC3 +
                Waste.ef + 
                Gravel_ef + 
-               Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benth)
+               Agric_m_log + 
+                 Highway_m_log +
+               (1|System_id:Year:Country), data = Benthic)
 
 
 ### multicolinearity
@@ -803,9 +804,17 @@ plot_model(m9.3, type = "pred", terms = c( "Agric_m_log"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Agrofields distance", "Fish abundance")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Agric_m_log, y = Fish_log),  
              fill= "#0072B2", size=2, shape=21)
 
 
+
+plot_model(m9.3, type = "pred", terms = c( "Highway_m_log"),  show.data=F, 
+           jitter = 0.05, 
+           title = "", dot.alpha=0.8, line.size=0.1, 
+           axis.title = c("Highway distance", "Fish abundance")) +
+  geom_point(data = Benthic, 
+             mapping = aes(x = Highway_m_log, y = Fish_log),  
+             fill= "#0072B2", size=2, shape=21)
 #####

@@ -25,11 +25,16 @@ FuncDiv <- read.csv ( "Data/FuncDiv.csv", header=T)%>%
 
 names(FuncDiv)
 
-Benth <- Benth_dat %>%
-  full_join(FuncDiv, by="Sampling_site") %>% 
-  mutate(System_id = as_factor(System_id), Year = as_factor(Year), Country=as_factor(Country)) 
+Benthic <- Benth_dat %>%
+  full_join(FuncDiv, by="Sampling_site") %>%
+  mutate(System_id = as_factor(System_id), Year = as_factor(Year), 
+       Country=as_factor(Country),
+       Waste.ef=as_factor(Waste.effluent),
+       Gravel_ef=as_factor(Gravel_eff),
+       Agric_m_log=log(Agriculture_m),
+       Highway_m_log=log(Highway_m))
 
-str(Benth)
+str(Benthic)
 
 #--------------------------#
   
@@ -38,13 +43,13 @@ str(Benth)
 #--------------------------#
   
 # Explore the relationships
-ggplot(Benth, aes(x = System_type, y = log(Abund))) + geom_boxplot()
-ggplot(Benth, aes(sqrt(Macrophyte_biomass), (Abund))) + geom_point()
-ggplot(Benth, aes(Water_PC1, log(Abund))) + geom_point()
-ggplot(Benth, aes(Water_PC3, log(Abund))) + geom_point()
-ggplot(Benth, aes(Fish_abundance, log(Abund))) + geom_point()
+ggplot(Benthic, aes(x = System_type, y = log(Abund))) + geom_boxplot()
+ggplot(Benthic, aes(sqrt(Macrophyte_biomass), (Abund))) + geom_point()
+ggplot(Benthic, aes(Water_PC1, log(Abund))) + geom_point()
+ggplot(Benthic, aes(Water_PC3, log(Abund))) + geom_point()
+ggplot(Benthic, aes(Fish_abundance, log(Abund))) + geom_point()
 
-Benth$Abund
+Benthic$Abund
 
 # LMM: Abundance
 
@@ -56,7 +61,7 @@ m1 <- lmer(Abund ~
                   Fish_abundance +
                   (1|System_id:Year:Country),
                 #(1|Random_effects), 
-                data = Benth)
+                data = Benthic)
 ## assumptions 
 plot(m1) # heteroscedasticity  ->  transform response
 qqnorm(resid(m1))
@@ -72,7 +77,7 @@ m2 <- lmer(log(Abund) ~
                 Fish_abundance +
              (1|System_id:Year:Country),
            #  (1|Random_effects), 
-             data = Benth)
+             data = Benthic)
 
 car::Anova(m2)
 summary(m2)
@@ -111,7 +116,7 @@ m2 <- lmer(log(Abund) ~
                   Fish_abundance +
                   (1|System_id:Year:Country),
                 #  (1|Random_effects), 
-                data = Benth)
+                data = Benthic)
 
 car::Anova(m2)
 
@@ -127,7 +132,7 @@ cld(emmeans(m2, list(pairwise ~ System_type)),
     #  type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = log(Abund))) +
+ggplot(Benthic, aes(x = System_type, y = log(Abund))) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Abundance")+
@@ -150,7 +155,7 @@ m_abund <- lmer(log(Abund) ~
                   Fish_abundance +
                   (1|System_id:Year:Country),
                 #  (1|Random_effects), 
-                data = Benth)
+                data = Benthic)
 car::vif(m_abund)
 car::Anova(m_abund)
 
@@ -162,7 +167,7 @@ m_abund <- lmer(log(Abund) ~
                 #  Fish_abundance +
                   (1|System_id:Year:Country),
                 #  (1|Random_effects), 
-                data = Benth)
+                data = Benthic)
 
 car::Anova(m_abund)
 
@@ -177,7 +182,7 @@ plot_model(m_abund, type = "pred", terms = c( "Water_PC3"),  show.data=F,
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Water properties PC3", "Abundance")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Water_PC3, y = Abund),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -187,7 +192,7 @@ plot_model(m_abund, type = "pred", terms = c( "Macrophyte_biomass"),  show.data=
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Macrophyte biomass", "Abundance")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Macrophyte_biomass, y = Abund),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -209,10 +214,10 @@ m_abund <- lmer(log(Abund) ~
                   # Fish_abundance +
                   #  (1|System_id:Year:Country),
                  (1|Random_effects), 
-                data = Benth)
+                data = Benthic)
 
 car::Anova(m_abund)
-R2 <- r2glmm::r2beta(m_abund,  partial = T, data = Benth)
+R2 <- r2glmm::r2beta(m_abund,  partial = T, data = Benthic)
 R2
 plot(R2)
 
@@ -237,7 +242,7 @@ m3 <- glmer(SR ~ System_type +
                  sqrt(Macrophyte_biomass) + 
                  Fish_abundance  +
               (1|System_id:Year:Country), # (1|Random_effects), 
-               data = Benth,
+               data = Benthic,
                family="poisson")
 
 performance::check_convergence(m3)
@@ -273,7 +278,7 @@ cld(emmeans(m3, list(pairwise ~ System_type)),
     #  type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = SR)) +
+ggplot(Benthic, aes(x = System_type, y = SR)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Species richness")+
@@ -289,7 +294,7 @@ m_SR <- glmer(SR ~
              sqrt(Macrophyte_biomass) + 
               Fish_abundance +
               (1|System_id:Year:Country), #  (1|Random_effects), 
-            data = Benth,
+            data = Benthic,
             family="poisson")
 
 performance::check_convergence(m_SR)
@@ -319,7 +324,7 @@ plot_model(m_SR, type = "pred", terms = c( "Macrophyte_biomass"),  show.data=F,
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Macrophyte biomass", "Species richness")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Macrophyte_biomass, y = SR),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -351,7 +356,7 @@ m6 <- lmer(FEve ~ System_type +
              sqrt(Macrophyte_biomass) + 
              Fish_abundance  +
              (1|System_id:Year:Country), # (1|Random_effects), 
-           data = Benth)
+           data = Benthic)
 
 performance::check_convergence(m6)
 
@@ -381,7 +386,7 @@ cld(emmeans(m6, list(pairwise ~ System_type)),
     #  type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = FEve)) +
+ggplot(Benthic, aes(x = System_type, y = FEve)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="FEve")+
@@ -390,13 +395,13 @@ ggplot(Benth, aes(x = System_type, y = FEve)) +
 # remove System_type
 
 m_FEve <- lmer((FEve) ~ # System_type +
-                 HI_PC1 + HI_PC2 + HI_PC3 +
+                # HI_PC1 + HI_PC2 + HI_PC3 +
                  Water_PC1 + Water_PC2 + Water_PC3 +        
                  # Natural_areas + 
                  sqrt(Macrophyte_biomass) + 
-                 Fish_abundance  +
+                 Fish_abundance+
                  (1|System_id:Year:Country), # (1|Random_effects), 
-               data = Benth)
+               data = Benthic)
 
 performance::check_convergence(m_FEve)
 
@@ -411,7 +416,7 @@ plot_model(m_FEve, type = "pred", terms = c( "Water_PC1"),  show.data=F,
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Water_PC1", "FEve")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Water_PC1, y = FEve),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -421,7 +426,7 @@ plot_model(m_FEve, type = "pred", terms = c( "Macrophyte_biomass"),  show.data=F
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Macrophyte biomass", "FEve")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Macrophyte_biomass, y = FEve),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -430,7 +435,7 @@ plot_model(m_FEve, type = "pred", terms = c( "Fish_abundance"),  show.data=F,
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Fish abundance", "FEve")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Fish_abundance, y = FEve),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -447,7 +452,7 @@ m7 <- lmer(FDiv ~ System_type +
              sqrt(Macrophyte_biomass) + 
              Fish_abundance  +
              (1|System_id:Year:Country), # (1|Random_effects), 
-           data = Benth)
+           data = Benthic)
 
 performance::check_convergence(m7)
 
@@ -480,7 +485,7 @@ cld(emmeans(m7, list(pairwise ~ System_type)),
     #  type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = FDiv)) +
+ggplot(Benthic, aes(x = System_type, y = FDiv)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="FDiv")+
@@ -498,7 +503,7 @@ m_FDiv <- lmer(FDiv ~  # System_type +
                     sqrt(Macrophyte_biomass) + 
                   Fish_abundance  +
                  (1|System_id:Year:Country), # (1|Random_effects), 
-               data = Benth)
+               data = Benthic)
 
 performance::check_convergence(m_FDiv)
 
@@ -523,7 +528,7 @@ m_FDiv <- lmer(FDiv ~ # System_type +
                  sqrt(Macrophyte_biomass) + 
                   Fish_abundance  +
                  (1|System_id:Year:Country), # (1|Random_effects), 
-               data = Benth)
+               data = Benthic)
 
 car::Anova(m_FDiv)
 
@@ -531,7 +536,7 @@ plot_model(m_FDiv, type = "pred", terms = c( "Water_PC1"),  show.data=F,
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Water_PC1", "FDiv")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Water_PC1, y = FDiv),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -540,7 +545,7 @@ plot_model(m_FDiv, type = "pred", terms = c( "Fish_abundance"),  show.data=F,
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Fish abundance", "FDiv")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Fish_abundance, y = FDiv),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -550,7 +555,7 @@ plot_model(m_FDiv, type = "pred", terms = c( "Water_PC2"),  show.data=F,
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Water_PC2", "FDiv")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Water_PC2, y = FDiv),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -560,7 +565,7 @@ plot_model(m_FDiv, type = "pred", terms = c( "Macrophyte_biomass"),  show.data=F
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Macrophyte biomass", "FDiv")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Macrophyte_biomass, y = FDiv),  
              fill= "#0072B2", size=2, shape=21)
 
@@ -580,7 +585,7 @@ m8 <- lmer(FDis ~ System_type +
              sqrt(Macrophyte_biomass) + 
               Fish_abundance  +
              (1|System_id:Year:Country), # (1|Random_effects), 
-           data = Benth)
+           data = Benthic)
 
 performance::check_convergence(m8)
 
@@ -599,7 +604,7 @@ m8 <- lmer(sqrt(FDis) ~ System_type +
              sqrt(Macrophyte_biomass) + 
              Fish_abundance  +
              (1|System_id:Year:Country), # (1|Random_effects), 
-           data = Benth)
+           data = Benthic)
 
 ## assumptions 
 plot(m8) 
@@ -630,7 +635,7 @@ cld(emmeans(m8, list(pairwise ~ System_type)),
     #  type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benth, aes(x = System_type, y = FDis)) +
+ggplot(Benthic, aes(x = System_type, y = FDis)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="FDis")+
@@ -646,7 +651,7 @@ m_FDis <- lmer(sqrt(FDis) ~  # System_type +
                        sqrt(Macrophyte_biomass) + 
                        Fish_abundance  +
                        (1|System_id:Year:Country), # (1|Random_effects), 
-                     data = Benth, REML = F)
+                     data = Benthic, REML = F)
 
 performance::check_convergence(m_FDis)
 
@@ -664,7 +669,7 @@ plot_model(m_FDis, type = "pred", terms = c( "Water_PC3"),  show.data=F,
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Water_PC3", "FDis")) +
-  geom_point(data = Benth, 
+  geom_point(data = Benthic, 
              mapping = aes(x = Water_PC3, y = FDis),  
              fill= "#0072B2", size=2, shape=21)
 
