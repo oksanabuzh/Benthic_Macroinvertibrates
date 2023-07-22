@@ -54,7 +54,7 @@ m1 <- lmer(Abund ~
                   Water_PC1 + Water_PC2 + Water_PC3 +        
                   sqrt(Macrophyte_biomass) +  
                   Fish_abundance +
-                  (1|Country/Year/System_id),
+                  (1|System_id:Year:Country),
                 #(1|Random_effects), 
                 data = Benth)
 ## assumptions 
