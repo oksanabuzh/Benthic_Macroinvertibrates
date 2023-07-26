@@ -1,5 +1,5 @@
 # Mixed effect models (G)LMM
-# testing the effcets of human impact and system properties on the predictor variables
+# testing the effects of human impact and system properties on predictor variables
 
 library(tidyverse)
 library(ggplot2)
@@ -11,24 +11,38 @@ library(sjPlot)
 library(emmeans)
 library(multcomp)
 
+# set theme for the plots
+
+set_theme(base = theme_bw(),
+          axis.textsize.x = 0.9, axis.textsize.y = 0.9, axis.textcolor = "black",
+          axis.title.color = "black", axis.title.size = 1,
+          legend.pos = "top")
+
+
 #Data----
 
 Benth_dat <- read_csv ("Data/Benth_PCA2.csv")
 str(Benth_dat)
 
 
+FuncDiv <- read.csv ( "Data/FuncDiv.csv", header=T)%>% 
+  dplyr::select(-qual.FRic, -sing.sp, -nbsp) %>% 
+  rename(Sampling_site=X)
+
 Benthic <- Benth_dat %>%
   full_join(FuncDiv, by="Sampling_site") %>% 
   mutate(System_id = as_factor(System_id), Year = as_factor(Year), 
          Country=as_factor(Country),
-         Waste.ef=as_factor(Waste.effluent),
+       #  Waste.ef=as_factor(Waste.effluent),
+         Waste.ef=recode_factor(Waste.effluent,
+                  "0"="absent", "1"="present"),
          Gravel_ef=as_factor(Gravel_eff),
          Agric_m_log=log(Agriculture_m),
          Highway_m_log=log(Highway_m)) 
 
 str(Benthic)
 
-# Human impact relations:
+# Human impact dependency on system type:
 
 #Depth----
 m1 <- lmer(Depth_cm ~ System_type +
@@ -67,52 +81,81 @@ ggplot(Benthic, aes(x = System_type, y = (Depth_cm))) +
 
 #HI----
 
-##HI_PC1----
-m2 <- lmer(HI_PC1 ~ System_type +
-             (1|System_id:Year:Country), data = Benthic)
+# Waste.ef
+# Gravel_ef
+# Agric_m_log
+# Highway_m_log
 
-## assumptions 
-plot(m2) # heteroscedasticity  ->  transform response
-qqnorm(resid(m2))
-qqline(resid(m2))
+## Waste.ef ----
 
-m2.1 <- lmer(log(HI_PC1+2) ~ System_type +
-               (1|System_id:Year:Country), data = Benthic)
+# Sample size per system type
+table(Benthic$Waste.ef)
+table(Benthic$Waste.ef, Benthic$System_type)
 
-## assumptions 
-plot(m2.1) # heteroscedasticity  ->  transform response
-qqnorm(resid(m2.1))
-qqline(resid(m2.1))
 
-summary(m2.1)
-car::Anova(m2.1)
+s <- Benthic %>% 
+    count(Waste.ef, System_type)  
+s 
 
-### Pairwise comparisons
-emmeans(m2.1, list(pairwise ~ System_type), adjust = "tukey", 
-        Letters = letters, type="response")
+ggplot(s, aes(fill=Waste.ef, y=n, x=System_type)) + 
+  geom_bar(stat="identity" ) + #, position=position_dodge()
+  labs(y = "Observations, n", x = "System type", 
+       fill= "Waste effluent") +
+  theme_bw() +
+  theme(axis.text.y=element_text(colour = "black", size=10),
+        axis.text.x=element_text(colour = "black", size=9),
+        axis.title=element_text(size=10),
+        legend.text=element_text(colour = "black", size=7),
+        legend.title=element_text(size=8),
+        legend.position="right")
 
-cld(emmeans(m2.1, list(pairwise ~ System_type)),  
-    type="response",
-    Letters = letters, adjust = "tukey")
+## Gravel_eff ----
 
-ggplot(Benthic, aes(x = System_type, y = log(HI_PC1+2))) +
+g <- Benthic %>% 
+  count(Gravel_ef, System_type)  
+g 
+
+ggplot(g, aes(fill=Gravel_ef, y=n, x=System_type)) + 
+  geom_bar(stat="identity" ) + #, position=position_dodge()
+  scale_fill_brewer(palette = "BuPu") +
+  #  scale_color_manual(col_g)+
+labs(y = "Observations, n", x = "System type", 
+       fill= "Gravel exploitation") +
+  theme_bw() +
+  theme(axis.text.y=element_text(colour = "black", size=10),
+        axis.text.x=element_text(colour = "black", size=9),
+        axis.title=element_text(size=10),
+        legend.text=element_text(colour = "black", size=7),
+        legend.title=element_text(size=8),
+        legend.position="right") 
+
+
+ggplot(Benthic, aes(x = System_type, y = Gravel_eff)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="System type", y="HI_PC1")+
-  theme_bw()
+  labs(x="System type", y="Gravel Exploitation")+
+  theme_bw() +
+  theme(axis.text.y=element_text(colour = "black", size=10),
+        axis.text.x=element_text(colour = "black", size=9),
+        axis.title=element_text(size=10)) 
+
+m2 <- lmer(Gravel_eff ~ System_type +(1|System_id:Year), data = Benthic)
+
+car::Anova(m2)
+summary(m2)
 
 
-##HI_PC2----
-m3 <- lmer(HI_PC2 ~ System_type +
+  
+
+##Agric_m----
+m3 <- lmer(Agric_m_log ~ System_type +
              (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
 plot(m3) # heteroscedasticity ?
-check_heteroscedasticity(m3) # no heteroscedasticity
+check_heteroscedasticity(m3)
 qqnorm(resid(m3))
 qqline(resid(m3))
-
-check_outliers(m3)
 
 
 summary(m3)
@@ -122,18 +165,21 @@ car::Anova(m3)
 emmeans(m3, list(pairwise ~ System_type), adjust = "tukey", 
         Letters = letters, type="response")
 
-cld(emmeans(m3.1, list(pairwise ~ System_type)),  
+cld(emmeans(m3, list(pairwise ~ System_type)),  
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benthic, aes(x = System_type, y = HI_PC2)) +
+ggplot(Benthic, aes(x = System_type, y = Agriculture_m)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="System type", y="HI_PC2")+
+  labs(x="System type", y="Agriculture distance, m")+
   theme_bw()
 
-##HI_PC3----
-m4 <- lmer(HI_PC3 ~ System_type +
+
+
+
+##Highway_m_log----
+m4 <- lmer(Highway_m_log ~ System_type +
              (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
@@ -154,21 +200,33 @@ cld(emmeans(m4, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benthic, aes(x = System_type, y = HI_PC3)) +
+ggplot(Benthic, aes(x = System_type, y = Highway_m)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="System type", y="HI_PC3")+
+  labs(x="System type", y="Highway distance, m")+
   theme_bw()
-
-
 
 # Water properties----
 
 ## Water_PC1----
 
-m5 <- lmer(Water_PC1 ~ System_type +
-             HI_PC1 + HI_PC2 + HI_PC3 +
-             # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
+
+m5 <- lmer(Water_PC1 ~ 
+             System_type +
+             Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), data = Benthic)
+plot(m5)
+check_outliers(m5)
+
+# transform response
+
+min(Benthic$Water_PC1)
+
+Benthic$Water_PC1_log <- log(Benthic$Water_PC1+2.6)
+
+m5 <- lmer(Water_PC1_log ~ 
+            System_type +
+             Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
              (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
@@ -189,7 +247,24 @@ performance::check_collinearity(m5)
 summary(m5)
 car::Anova(m5)
 
+# Plot effects:
+
+# Highway distance
+
+plot_model(m5, type = "pred", terms = c( "Highway_m_log"),  
+           show.data=F, jitter = 0, 
+           title = "", dot.alpha=0.8, line.size=0.1, 
+           axis.title = c("Highway distance", "Water PC1")) +
+  geom_point(data = Benthic, 
+             mapping = aes(x = Highway_m_log, y = Water_PC1_log),  
+             fill= "#0072B2", size=2, shape=21)
+
+
+
 ### Pairwise comparisons
+
+# System_type
+
 emmeans(m5, list(pairwise ~ System_type), adjust = "tukey", 
         Letters = letters, type="response")
 
@@ -200,115 +275,23 @@ cld(emmeans(m5, list(pairwise ~ System_type)),
 ggplot(Benthic, aes(x = System_type, y = Water_PC1)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="System type", y="Water_PC1")+
+  labs(x="System type", y="Water PC1")+
   theme_bw()
 
-
-
-####  remove System_type----
-
-m5.1 <- lmer(Water_PC1 ~ #System_type +
-             HI_PC1 + HI_PC2 + HI_PC3 +
-             # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benthic)
-
-
-### multicolinearity
-car::vif(m5.1) 
-performance::check_collinearity(m5.1)
-
-
-summary(m5.1)
-car::Anova(m5.1)
-
-set_theme(base = theme_bw(),
-          axis.textsize.x = 1, axis.textsize.y = 1, axis.textcolor = "black",
-          axis.title.color = "black", axis.title.size = 1.4,
-          legend.pos = "top")
-
-plot_model(m5.1, type = "pred", terms = c( "HI_PC1"),  show.data=F, 
-           jitter = 0.05, 
-           title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("HI_PC1", "Water_PC1")) +
-  geom_point(data = Benthic, 
-             mapping = aes(x = HI_PC1, y = Water_PC1),  
-             fill= "#0072B2", size=2, shape=21)
-
-#### use raw HI data----
-
-ggplot(Benthic, aes(log(Highway_m), Water_PC1)) + geom_point()
-ggplot(Benthic, aes(log(Agriculture_m), Water_PC1)) + geom_point()
-
-
-m5.2 <- lmer(Water_PC1 ~ #System_type +
-               # HI_PC1 + HI_PC2 + HI_PC3 +
-                Waste.ef + 
-               Gravel_ef + 
-               Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benthic)
-
-
-
-
-### multicolinearity
-car::vif(m5.2) 
-performance::check_collinearity(m5.2)
-
-
-summary(m5.2)
-car::Anova(m5.2)
-
-set_theme(base = theme_bw(),
-          axis.textsize.x = 1, axis.textsize.y = 1, axis.textcolor = "black",
-          axis.title.color = "black", axis.title.size = 1.4,
-          legend.pos = "top")
-
-plot_model(m5.2, type = "pred", terms = c( "Highway_m_log"),  show.data=F, 
-           jitter = 0.05, 
-           title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("Highway distance", "Water_PC1")) +
-  geom_point(data = Benthic, 
-             mapping = aes(x = Highway_m_log, y = Water_PC1),  
-             fill= "#0072B2", size=2, shape=21)
-
-
-plot_model(m5.2, type = "pred", terms = c( "Agric_m_log"),  show.data=F, 
-           jitter = 0.05, 
-           title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("Agrofields distance", "Water_PC1")) +
-  geom_point(data = Benthic, 
-             mapping = aes(x = Agric_m_log, y = Water_PC1),  
-             fill= "#0072B2", size=2, shape=21)
-
-
-### Pairwise comparisons 
-# for Gravel_ef
-
-emmeans(m5.2, list(pairwise ~ Gravel_ef), adjust = "tukey", 
-        Letters = letters, type="response")
-
-cld(emmeans(m5.2, list(pairwise ~ Gravel_ef)),  
-    type="response",
-    Letters = letters, adjust = "tukey")
-
-ggplot(Benthic, aes(x = Gravel_ef, y = Water_PC1)) +
-  geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
-  geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="Gravel exploitation", y="Water_PC1")+
-  theme_bw()
 
 # Waste.ef
-emmeans(m5.2, list(pairwise ~ Waste.ef), adjust = "tukey", 
+
+emmeans(m5, list(pairwise ~ Waste.ef), adjust = "tukey", 
         Letters = letters, type="response")
 
-cld(emmeans(m5.2, list(pairwise ~ Waste.ef)),  
+cld(emmeans(m5, list(pairwise ~ Waste.ef)),  
     type="response",
     Letters = letters, adjust = "tukey")
 
 ggplot(Benthic, aes(x = Waste.ef, y = Water_PC1)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="Waste effluent presence", y="Water_PC1")+
+  labs(x="Waste effluent", y="Water PC1")+
   theme_bw()
 
 
@@ -316,264 +299,217 @@ ggplot(Benthic, aes(x = Waste.ef, y = Water_PC1)) +
 
 ## Water_PC2----
 
-m6 <- lmer(Water_PC2 ~ System_type +
-             HI_PC1 + HI_PC2 + HI_PC3 +
-             # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benthic)
+m6 <- lmer(Water_PC2 ~ 
+             System_type +
+             Waste.ef + Gravel_ef + 
+             Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), 
+           data = Benthic)
 
 ## assumptions 
 plot(m6) # heteroscedasticity ?
 check_heteroscedasticity(m6)
+check_outliers(m6)
+Benthic[16, 1]
+
+
+m6 <- lmer(Water_PC2 ~ 
+              System_type +
+             Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), 
+           data = Benthic %>%  
+             filter(!Sampling_site==("VI1_2016")))
+
+
+plot(m6) 
+check_heteroscedasticity(m6)
+check_outliers(m6)
+
 qqnorm(resid(m6))
 qqline(resid(m6))
 
 
-min(Benthic$Water_PC2)
-m6.1 <- lmer(sqrt(Water_PC2+2.6) ~ System_type +
-             HI_PC1 + HI_PC2 + HI_PC3 +
-             # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benthic)
-
-## assumptions 
-plot(m6.1) # heteroscedasticity ?
-check_heteroscedasticity(m6.1)
-qqnorm(resid(m6.1))
-qqline(resid(m6.1))
-
-
-
-
-
 ### singularity fit
-performance::check_singularity(m6.1)
-performance::check_convergence(m6.1)
+performance::check_singularity(m6)
+performance::check_convergence(m6)
 
 ### multicolinearity
-car::vif(m6.1) 
-performance::check_collinearity(m6.1)
+car::vif(m6) 
+performance::check_collinearity(m6)
 
 
-summary(m6.1)
-car::Anova(m6.1)
+summary(m6)
+car::Anova(m6)
 
-### Pairwise comparisons
-emmeans(m6.1, list(pairwise ~ System_type), adjust = "tukey", 
+# remove system type
+
+m6 <- lmer(Water_PC2 ~ 
+            # System_type +
+             Waste.ef + Gravel_ef + 
+             Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), 
+           data = Benthic %>% 
+             filter(!Sampling_site==("VI1_2016")))
+
+plot(m6) 
+check_heteroscedasticity(m6)
+
+
+car::Anova(m6)
+
+
+# Gravel_ef
+emmeans(m6, list(pairwise ~ Gravel_ef), adjust = "none", 
         Letters = letters, type="response")
 
-cld(emmeans(m6.1, list(pairwise ~ System_type)),  
-    type="response",
-    Letters = letters, adjust = "tukey")
+cld(emmeans(m6, list(pairwise ~ Gravel_ef)),  
+    type="response", Letters = letters, adjust = "none")
 
-ggplot(Benthic, aes(x = System_type, y = Water_PC2)) +
+ggplot(Benthic %>% 
+         filter(!Sampling_site==("VI1_2016")),
+       aes(x = Gravel_ef, y = Water_PC2)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="System type", y="Water_PC2")+
+  labs(x="Gravel exploitation", y="Water PC2")+
   theme_bw()
 
-
-
-####  remove System_type----
-
-m6.2 <- lmer(sqrt(Water_PC2+2.6) ~ #System_type +
-               HI_PC1 + HI_PC2 + HI_PC3 +
-               # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benthic)
-
-
-### multicolinearity
-car::vif(m6.2) 
-performance::check_collinearity(m6.2)
-
-
-summary(m6.2)
-car::Anova(m6.2)
-
-set_theme(base = theme_bw(),
-          axis.textsize.x = 1, axis.textsize.y = 1, axis.textcolor = "black",
-          axis.title.color = "black", axis.title.size = 1.4,
-          legend.pos = "top")
-
-plot_model(m6.2, type = "pred", terms = c( "HI_PC2"),  show.data=F, 
-           jitter = 0.05, 
-           title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("HI_PC2", "Water_PC2")) +
-  geom_point(data = Benthic, 
-             mapping = aes(x = HI_PC2, y = Water_PC2),  
-             fill= "#0072B2", size=2, shape=21)
-
-#### use raw HI data----
-
-ggplot(Benthic, aes(log(Highway_m), Water_PC2)) + geom_point()
-
-
-m6.3 <- lmer(Water_PC2 ~ #System_type +
-               # HI_PC1 + HI_PC2 + HI_PC3 +
-               Waste.ef + 
-               Gravel_ef + 
-               Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benthic)
-
-
-### multicolinearity
-car::vif(m6.3) 
-performance::check_collinearity(m6.3)
-
-
-summary(m6.3)
-car::Anova(m6.3)
-
-
-### Pairwise comparisons 
 
 # Waste.ef
-emmeans(m6.3, list(pairwise ~ Waste.ef), adjust = "tukey", 
-        Letters = letters, type="response")
+emmeans(m6, list(pairwise ~ Waste.ef), adjust = "none", 
+        Letters = letters )
+cld(emmeans(m6, list(pairwise ~ Waste.ef)),  
+    type="response", Letters = letters, adjust = "none")
 
-cld(emmeans(m6.3, list(pairwise ~ Waste.ef)),  
-    type="response",
-    Letters = letters, adjust = "tukey")
-
-ggplot(Benthic, aes(x = Waste.ef, y = Water_PC2)) +
+ggplot(Benthic%>%
+         filter(!Sampling_site==("VI1_2016")), 
+       aes(x = Waste.ef, y = Water_PC2)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="Waste effluent presence", y="Water_PC2")+
+  labs(x="Waste effluent", y="Water PC2")+
   theme_bw()
+
+
+# System_type
+emmeans(m6, list(pairwise ~ System_type ), adjust = "none", 
+        Letters = letters )
+cld(emmeans(m6, list(pairwise ~ System_type )),  
+    type="response", Letters = letters, adjust = "none")
+
+ggplot(Benthic%>%
+         filter(!Sampling_site==("VI1_2016")), 
+       aes(x = System_type , y = Water_PC2)) +
+  geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
+  geom_boxplot(notch=F, alpha = 0, color = "black") +
+  labs(x="System type", y="Water PC2")+
+  theme_bw()
+
+# plot Highway
+
+plot_model(m6, type = "pred", terms = c( "Highway_m_log"),  
+           show.data=T, 
+           jitter = 0, 
+           title = "", dot.alpha=0.8, line.size=0.1, 
+          # axis.title = c("Highway_m_log", "W PC1")
+          ) +
+  geom_point(data = Benthic %>% 
+               filter(!Sampling_site=="III1_2016"), 
+             mapping = aes(x = SR, y = FRic_log),  
+             fill= "#0072B2", size=2, shape=21)
+
 
 
 
 ## Water_PC3----
 
-m7.1 <- lmer(Water_PC3 ~ System_type +
-             HI_PC1 + HI_PC2 + HI_PC3 +
-             # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-             (1|System_id:Year:Country), data = Benthic)
+m7 <- lmer(Water_PC3 ~ 
+             System_type +
+             Waste.ef + Gravel_ef + 
+             Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), 
+           data = Benthic)
 
 ## assumptions 
-plot(m7.1) # heteroscedasticity ?
-check_heteroscedasticity(m7.1)
-qqnorm(resid(m7.1))
-qqline(resid(m7.1))
+plot(m7) # heteroscedasticity ?
+check_heteroscedasticity(m7)
+qqnorm(resid(m7))
+qqline(resid(m7))
 
+check_outliers(m7)
 
-### singularity fit
-performance::check_singularity(m7.1)
-performance::check_convergence(m7.1)
+Benthic[16, 1]
 
-### multicolinearity
-car::vif(m7.1) 
-performance::check_collinearity(m7.1)
+m7 <- lmer(Water_PC3 ~ 
+             System_type +
+             Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), 
+             data = Benthic %>%  
+               filter(!Sampling_site==("VI1_2016")))
 
+plot(m7) # heteroscedasticity ?
+check_heteroscedasticity(m7)
+qqnorm(resid(m7))
+qqline(resid(m7))
 
-summary(m7.1)
-car::Anova(m7.1)
+check_outliers(m7)
+
+car::Anova(m7)
+
 
 ### Pairwise comparisons
-emmeans(m7.1, list(pairwise ~ System_type), adjust = "tukey", 
+emmeans(m7, list(pairwise ~ Waste.ef), 
+        adjust = "tukey", #adjust = "none", 
         Letters = letters, type="response")
 
-cld(emmeans(m7.1, list(pairwise ~ System_type)),  
+cld(emmeans(m7, list(pairwise ~ Waste.ef)),  
     type="response",
-    Letters = letters, adjust = "tukey")
+    Letters = letters, adjust = "none")
 
-ggplot(Benthic, aes(x = System_type, y = Water_PC3)) +
+
+ggplot(Benthic %>%  
+         filter(!Sampling_site==("VI1_2016")),
+       aes(x = Waste.ef, y = Water_PC3)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="System type", y="Water_PC3")+
+  labs(x="Waste effluent", y="Water PC3")+
   theme_bw()
 
+
+# System_type
+emmeans(m7, list(pairwise ~ System_type), 
+        adjust = "tukey", #adjust = "none", 
+        Letters = letters, type="response")
+
+cld(emmeans(m7, list(pairwise ~ System_type)),  
+    type="response",
+    Letters = letters, adjust = "none")
+
+ggplot(Benthic %>%  
+         filter(!Sampling_site==("VI1_2016")),
+       aes(x = System_type, y = Water_PC3)) +
+  geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
+  geom_boxplot(notch=F, alpha = 0, color = "black") +
+  labs(x="System ype", y="Water PC3")+
+  theme_bw()
 
 
 ####  remove System_type----
 
-m7.2 <- lmer(Water_PC3 ~ #System_type +
-               HI_PC1 + HI_PC2 + HI_PC3 +
-               # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benthic)
+m7 <- lmer(Water_PC3 ~ 
+            # System_type +
+             Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), 
+           data = Benthic  %>% 
+             filter(!Sampling_site==("VI1_2016")))
 
-
-### multicolinearity
-car::vif(m7.2) 
-performance::check_collinearity(m7.2)
-
-
-summary(m7.2)
-car::Anova(m7.2)
-
-set_theme(base = theme_bw(),
-          axis.textsize.x = 1, axis.textsize.y = 1, axis.textcolor = "black",
-          axis.title.color = "black", axis.title.size = 1.4,
-          legend.pos = "top")
-
-plot_model(m7.2, type = "pred", terms = c( "HI_PC2"),  show.data=F, 
-           jitter = 0.05, 
-           title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("HI_PC2", "Water_PC3")) +
-  geom_point(data = Benthic, 
-             mapping = aes(x = HI_PC2, y = Water_PC3),  
-             fill= "#0072B2", size=2, shape=21)
-
-#### use raw HI data----
-
-ggplot(Benthic, aes(log(Highway_m), Water_PC3)) + geom_point()
-
-
-m7.3 <- lmer(Water_PC3 ~ #System_type +
-               # HI_PC1 + HI_PC2 + HI_PC3 +
-               Waste.ef + 
-               Gravel_ef + 
-               Agric_m_log + Highway_m_log +
-               (1|System_id:Year:Country), data = Benthic)
-
-
-### multicolinearity
-car::vif(m7.3) 
-performance::check_collinearity(m7.3)
-
-
-summary(m7.3)
-car::Anova(m7.3)
-
-
-### Pairwise comparisons 
-
-# Waste.ef
-emmeans(m7.3, list(pairwise ~ Waste.ef), adjust = "tukey", 
-        Letters = letters, type="response")
-
-cld(emmeans(m7.3, list(pairwise ~ Waste.ef)),  
-    type="response",
-    Letters = letters, adjust = "tukey")
-
-ggplot(Benthic, aes(x = Waste.ef, y = Water_PC3)) +
-  geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
-  geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="Waste effluent presence", y="Water_PC3")+
-  theme_bw()
-
-
-
-# Gravel_ef
-emmeans(m7.3, list(pairwise ~ Gravel_ef), adjust = "tukey", 
-        Letters = letters, type="response")
-
-cld(emmeans(m7.3, list(pairwise ~ Gravel_ef)),  
-    type="response",
-    Letters = letters, adjust = "tukey")
-
-ggplot(Benthic, aes(x = Gravel_ef, y = Water_PC3)) +
-  geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
-  geom_boxplot(notch=F, alpha = 0, color = "black") +
-  labs(x="Gravel exploitation", y="Water_PC3")+
-  theme_bw()
-
+car::Anova(m7)
 
 
 ## Macrophytes----
 
-m8 <- lmer(Macrophyte_biomass ~ System_type +
-               Water_PC1 + Water_PC2 + Water_PC3 +
-               HI_PC1 + HI_PC2 + HI_PC3 +
-               # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
+m8 <- lmer(Macrophyte_biomass ~ 
+             System_type +
+             Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
+             Water_PC1 + Water_PC2 + Water_PC3 +
                (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
@@ -582,18 +518,21 @@ check_heteroscedasticity(m8)
 qqnorm(resid(m8))
 qqline(resid(m8))
 
+Benthic$Macroph_log <- log(Benthic$Macrophyte_biomass+1)
 
-m8.1 <- lmer(log(Macrophyte_biomass+1) ~ System_type +
-               HI_PC1 + HI_PC2 + HI_PC3 + 
+m8.1 <- lmer(Macroph_log ~ 
+              # System_type +
+              #  Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
                Water_PC1 + Water_PC2 + Water_PC3 +
-               # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benthic)
+               (1|System_id:Year:Country), data = Benthic%>% 
+               filter(!Sampling_site==("VI1_2016")))
 
 ## assumptions 
 plot(m8.1) # heteroscedasticity ?
 check_heteroscedasticity(m8.1)
 qqnorm(resid(m8.1))
 qqline(resid(m8.1))
+check_outliers(m8.1)
 
 
 ### singularity fit
@@ -608,7 +547,7 @@ performance::check_collinearity(m8.1)
 summary(m8.1)
 car::Anova(m8.1)
 
-### Pairwise comparisons
+ ### Pairwise comparisons
 emmeans(m8.1, list(pairwise ~ System_type), adjust = "tukey", 
         Letters = letters, type="response")
 
@@ -616,49 +555,21 @@ cld(emmeans(m8.1, list(pairwise ~ System_type)),
     type="response",
     Letters = letters, adjust = "tukey")
 
-ggplot(Benthic, aes(x = System_type, y = Macrophyte_biomass)) +
+ggplot(Benthic%>% 
+         filter(!Sampling_site==("VI1_2016")), 
+       aes(x = System_type, y = Macrophyte_biomass)) +
   geom_jitter(width = 0.15, fill= "#0072B2", size=2, shape=21) +
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="System type", y="Macrophyte biomass")+
   theme_bw()
 
 
-
-####  remove System_type----
-
-m8.2 <- lmer(log(Macrophyte_biomass+1) ~ #System_type +
-               HI_PC1 + HI_PC2 + HI_PC3 +
-               Water_PC1 + Water_PC2 + Water_PC3 +
-               # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benthic)
-
-
-### multicolinearity
-car::vif(m8.2) 
-performance::check_collinearity(m8.2)
-
-
-summary(m8.2)
-car::Anova(m8.2)
-
-
-Benthic$Macr_log <- log(Benthic$Macrophyte_biomass+1)
-Benthic$Water_PC2_s <- sqrt(Benthic$Water_PC2+2.6)
-
-m8.3 <- lmer(Macr_log ~ #System_type +
-               HI_PC1 + HI_PC2 + HI_PC3 +
-               Water_PC1 + Water_PC2 + Water_PC3 +
-               # Waste.ef + Gravel_ef + Agriculture_m + log(Highway_m) +
-               (1|System_id:Year:Country), data = Benthic)
-
-car::Anova(m8.3)
-
-plot_model(m8.3, type = "pred", terms = c( "Water_PC2"),  show.data=F, 
+plot_model(m8.1, type = "pred", terms = c( "Water_PC1"),  show.data=F, 
            jitter = 0.05, 
            title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("Water_PC2", "Macrophyte biomass")) +
+           axis.title = c("Water_PC1", "Macrophyte biomass")) +
   geom_point(data = Benthic, 
-             mapping = aes(x = Water_PC2, y = Macr_log),  
+             mapping = aes(x = Water_PC1, y = Macroph_log),  
              fill= "#0072B2", size=2, shape=21)
 
 
