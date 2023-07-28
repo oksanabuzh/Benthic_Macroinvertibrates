@@ -1,7 +1,17 @@
 # Code for quantification of functional composition and functional diversity using functional traits
 
+
+# packages----
 library(dplyr)
 library(tidyverse)
+library(ggplot2)
+library(car)
+library(lme4) 
+library(lmerTest)
+library(performance)
+library(sjPlot)
+library(emmeans)
+library(multcomp)
 
 citation() 
 rm(list=ls(all=TRUE))
@@ -171,22 +181,164 @@ write.csv(FuncD, file = "Data/FuncDiv.csv")
 
 ## Correlation among functional diversity indices----
 
-FuncDiv <- read.csv ( "Data/FuncDiv.csv", header=T)%>% 
-  dplyr::select(-qual.FRic, -sing.sp)
+FuncDiv <- read.csv ("Data/FuncDiv.csv", header=T)%>% 
+  dplyr::select(-qual.FRic, -sing.sp) %>% 
+  rename(Sampling_site=X)
+
 names(FuncDiv)
 
-Data <- FuncDiv[,2:7]
+Data <- FuncDiv[,2:7] %>% 
+  rename(SR=nbsp)  
 
 cor <- cor(Data, method = c("pearson"))
 round(cor, digits=2)
 
-write.csv(round(corl1, 2), "correl_FunDiv.csv", row.names = T)
+write.csv(round(cor, 2), "correl_FunDiv.csv", row.names = T)
 
 
 # Correlogram:
-library(corrplot)
 
+library(ggcorrplot)
+x11(height=4.5,width=4.25)
+ggcorrplot(cor, hc.order = F, type = "lower",
+           lab = TRUE, lab_size = 3, tl.cex = 11,
+           lab_col = "black",
+           colors = c("red", "white", "blue"))
+# or
+
+library(corrplot)
 x11(height=9,width=8.5)
 corrplot(cor, type = "upper",  
          tl.col = "black", tl.srt = 50)
 
+
+# Relationship among SR and FD indices----
+
+Benth_dat <- read_csv ("Data/Benth_PCA2.csv")
+str(Benth_dat)
+
+Benthic_dat <- Benth_dat %>%
+  full_join(FuncDiv, by="Sampling_site") %>% 
+  mutate(System_id = as_factor(System_id), Year = as_factor(Year), 
+         Country=as_factor(Country)) 
+
+# FRic----
+
+m1<- lmer(FRic ~  SR + 
+               (1|System_id:Year:Country), data = Benthic_dat)
+
+plot(m1) 
+
+Benthic_dat$FRic_log <- log(Benthic_dat$FRic)
+
+m1<- lmer(FRic_log ~  SR + 
+            (1|System_id:Year:Country), data = Benthic_dat)
+plot(m1) 
+check_heteroscedasticity(m1)
+qqnorm(resid(m1))
+qqline(resid(m1))
+
+check_outliers(m1)
+m1<- lmer(FRic_log ~  SR + 
+            (1|System_id:Year:Country), data = Benthic_dat[-7,])
+
+Anova(m1)
+
+# set theme for the plots
+
+set_theme(base = theme_bw(),
+          axis.textsize.x = 0.9, axis.textsize.y = 0.9, axis.textcolor = "black",
+          axis.title.color = "black", axis.title.size = 1,
+          legend.pos = "top")
+
+
+plot_model(m1, type = "pred", terms = c( "SR"),  
+           show.data=F, jitter = 0, 
+           title = "", dot.alpha=0.8, line.size=0.1, 
+           axis.title = c("SR", "FRic")) +
+  geom_point(data = Benthic_dat[-7,], 
+             mapping = aes(x = SR, y = FRic_log),  
+             fill= "#0072B2", size=2, shape=21)
+
+# FEven
+
+# FEve----
+
+m2<- lmer(FEve ~  SR + 
+            (1|System_id:Year:Country), data = Benthic_dat)
+
+plot(m2) 
+qqnorm(resid(m2))
+qqline(resid(m2))
+
+check_outliers(m2)
+
+
+Anova(m2)
+
+# set theme for the plots
+
+set_theme(base = theme_bw(),
+          axis.textsize.x = 0.9, axis.textsize.y = 0.9, axis.textcolor = "black",
+          axis.title.color = "black", axis.title.size = 1,
+          legend.pos = "top")
+
+
+plot_model(m2, type = "pred", terms = c( "SR"),  
+           show.data=F, jitter = 0, 
+           title = "", dot.alpha=0.8, line.size=0.1, 
+           axis.title = c("SR", "FEve")) +
+  geom_point(data = Benthic_dat, 
+             mapping = aes(x = SR, y = FEve),  
+             fill= "#0072B2", size=2, shape=21)
+
+
+# FDiv----
+
+m3<- lmer(FDiv ~  SR + (1|System_id:Year:Country), data = Benthic_dat)
+
+plot(m3) 
+qqnorm(resid(m3))
+qqline(resid(m3))
+
+check_outliers(m3)
+
+
+Anova(m3)
+
+# set theme for the plots
+
+set_theme(base = theme_bw(),
+          axis.textsize.x = 0.9, axis.textsize.y = 0.9, axis.textcolor = "black",
+          axis.title.color = "black", axis.title.size = 1,
+          legend.pos = "top")
+
+
+plot_model(m3, type = "pred", terms = c( "SR"),  
+           show.data=F, jitter = 0, 
+           title = "", dot.alpha=0.8, line.size=0.1, 
+           axis.title = c("SR", "FDiv")) +
+  geom_point(data = Benthic_dat, 
+             mapping = aes(x = SR, y = FDiv),  
+             fill= "#0072B2", size=2, shape=21)
+
+# FDis----
+
+m4<- lmer(FDis ~  SR + (1|System_id:Year:Country), data = Benthic_dat)
+
+plot(m4) 
+qqnorm(resid(m4))
+qqline(resid(m4))
+
+Anova(m4)
+
+# set theme for the plots
+
+
+plot_model(m4, type = "pred", terms = c( "SR"),  
+           show.data=F, jitter = 0, 
+           title = "", dot.alpha=0.8, line.size=0.1, 
+           axis.title = c("SR", "FDis")) +
+  geom_point(data = Benthic_dat, 
+             mapping = aes(x = SR, y = FDis),  
+             fill= "#0072B2", size=2, shape=21)

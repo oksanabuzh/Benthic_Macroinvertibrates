@@ -1,4 +1,6 @@
-# Data exploration and preparation for analysis
+# Data exploration and preparation for the (G)LMM analysis
+# Correlation among predictors
+# PCA for water properties
 
 citation() 
 rm(list=ls(all=TRUE))
@@ -87,7 +89,6 @@ write.csv(corl, "Results/correlation.csv",  row.names = T)
 # plot correlations
 
 library(ggcorrplot)
-
 x11(height=9,width=8.5)
 ggcorrplot(corl, hc.order = F, type = "lower",
            lab = TRUE, lab_size = 2, tl.cex = 9,
