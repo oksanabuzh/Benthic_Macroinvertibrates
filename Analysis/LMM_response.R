@@ -51,14 +51,13 @@ Benthic <- Benth_dat %>%
        Waste.ef=as_factor(Waste.effluent),
        Gravel_ef=as_factor(Gravel_eff),
        Agric_m_log=log(Agriculture_m),
-       Highway_m_log=log(Highway_m))
+       Highway_m_log=log(Highway_m),
+       Macroph_sqrt=sqrt(Macrophyte_biomass))
 
 str(Benthic)
 
 
-Benthic$Fish_sqrt <- sqrt(Benthic$Fish_abundance)
-Benthic$Macroph_sqrt <- sqrt(Benthic$Macrophyte_biomass)
-
+  
 
 #--------------------------#
   
@@ -69,8 +68,6 @@ Benthic$Macroph_sqrt <- sqrt(Benthic$Macrophyte_biomass)
 ggplot(Benthic, aes(x = System_type, y = log(Abund))) + geom_boxplot()
 ggplot(Benthic, aes(sqrt(Macrophyte_biomass), (Abund))) + geom_point()
 ggplot(Benthic, aes(sqrt(Fish_abundance), (Abund))) + geom_point()
-
-sqrt(Fish_abundance)
 
 
 Benthic$Abund
@@ -164,18 +161,15 @@ m1.2 <- lmer(Abund_log ~  # System_type +
                Waste.ef + Gravel_eff + Agric_m_log + Highway_m_log + 
               # (1|System_id:Year:Country),
                (1|Random_effects), # for r2beta the nested random effects do not work. Thus, I included manually assigned random effects, which are equal to "System_id:Year:Country" 
-             data = Benthic)
-
-car::Anova(m1.2)
+             data = Benthic, REML=F)
+#Anova(m1.2)
 R2_abund1 <- r2glmm::r2beta(m1.2,  partial = T, data = Benthic)
 R2_abund1
 plot(R2_abund1)
 
 # save results
-# write.csv(MuMIn::r.squaredGLMM(FE_m4),  file = "Results/Mod_R2_Abund.csv")
-# write.csv(R2,  file = "Results/R2_part_Abund.csv")
-# write.csv(Anova(m_abund),  file = "Results/LMM_Abund.csv")
-# write.csv(coef(summary(m_abund)),  file = "Results/summary_Abund.csv")
+# write.csv(Anova(m1.2),  file = "Results/Abund_LMM.csv")
+# write.csv(coef(summary(m1.2)),  file = "Results/Abund_summary.csv")
 
 
 ### Mod2: Water properties----
@@ -287,6 +281,24 @@ R2_abund2
 plot(R2_abund2)
 
 
+### save partial R2 ----
+
+R2_Abund <- rbind(as.data.frame(R2_abund1), as.data.frame(R2_abund2)) %>% 
+  rename(Variables=Effect) %>% 
+  dplyr::select(Variables, Rsq) %>% 
+  filter(!Variables=="Model") %>% 
+  mutate(Variables=recode_factor(Variables, 
+         Highway_m_log="Highway_m", Agric_m_log ="Agric_m", 
+         Waste.ef1="Waste", Gravel_eff="Gravel",
+         "sqrt(Macrophyte_biomass)"="Macrophytes", Fish_abundance ="Fish")) %>% 
+  mutate(Variables=fct_relevel(Variables, c("Agric_m", "Highway_m", "Gravel", "Waste", 
+                                            "Water_PC1", "Water_PC2", "Water_PC3",
+                                            "Macrophytes", "Fish"))) %>% 
+  arrange(Variables)
+
+
+R2_Abund
+write.csv(R2_Abund, "Results/Abund_R2.csv")
 
 #--------------------------#
 
@@ -450,6 +462,25 @@ R2_SR2
 plot(R2_SR2)
 
 
+### save partial R2 ----
+
+R2_SR <- rbind(as.data.frame(R2_SR1), as.data.frame(R2_SR2)) %>% 
+  rename(Variables=Effect) %>% 
+  dplyr::select(Variables, Rsq) %>% 
+  filter(!Variables=="Model", 
+         !Variables=="System_typePond", !Variables=="System_typeLake") %>% 
+  mutate(Variables=recode_factor(Variables, 
+                                 Highway_m_log="Highway_m", Agric_m_log ="Agric_m", 
+                                 Waste.ef1="Waste", Gravel_eff="Gravel",
+                                 Macroph_sqrt="Macrophytes", Fish_abundance ="Fish")) %>% 
+  mutate(Variables=fct_relevel(Variables, c("Agric_m", "Highway_m", "Gravel", "Waste", 
+                                            "Water_PC1", "Water_PC2", "Water_PC3",
+                                            "Macrophytes", "Fish"))) %>% 
+  arrange(Variables)
+
+
+R2_SR
+write.csv(R2_SR, "Results/SR_R2.csv")
 
 # 3) Functional diversity measures----
 
@@ -538,12 +569,6 @@ R2_FEve1 <- r2glmm::r2beta(m3.2,  partial = T, data = Benthic)
 R2_FEve1
 plot(R2_FEve1)
 
-# save results
-# write.csv(MuMIn::r.squaredGLMM(FE_m4),  file = "Results/Mod_R2_FEve.csv")
-# write.csv(R2,  file = "Results/R2_part_FEve.csv")
-# write.csv(Anova(m_FEve),  file = "Results/LMM_FEve.csv")
-# write.csv(coef(summary(m_FEve)),  file = "Results/summary_FEve.csv")
-
 
 ### Mod2: Water properties----
 
@@ -614,6 +639,26 @@ R2_FEve2 <- r2glmm::r2beta(m3.4,  partial = T, data = Benthic)
 R2_FEve2
 plot(R2_FEve2)
 
+
+### save partial R2 ----
+
+R2_FEve <- rbind(as.data.frame(R2_FEve1), as.data.frame(R2_FEve2)) %>% 
+  rename(Variables=Effect) %>% 
+  dplyr::select(Variables, Rsq) %>% 
+  filter(!Variables=="Model") %>% 
+  mutate(Variables=recode_factor(Variables, 
+                                 Highway_m_log="Highway_m", Agric_m_log ="Agric_m", 
+                                 Waste.ef1="Waste", Gravel_eff="Gravel",
+                                 "sqrt(Macrophyte_biomass)"="Macrophytes", Fish_abundance ="Fish")) %>% 
+  mutate(Variables=fct_relevel(Variables, c("Agric_m", "Highway_m", "Gravel", "Waste", 
+                                            "Water_PC1", "Water_PC2", "Water_PC3",
+                                            "Macrophytes", "Fish"))) %>% 
+  arrange(Variables)
+
+
+R2_FEve
+write.csv(R2_FEve, "Results/FEve_R2.csv")
+
 #--------------------------#
 
 ## 3.2) FDiv ----
@@ -626,7 +671,6 @@ m4.1 <- lmer(FDiv ~  System_type +
              data = Benthic)
 
 plot(m4.1) 
-check_homogeneity(m4.1)
 check_outliers(m4.1)
 qqnorm(resid(m4.1))
 qqline(resid(m4.1))
@@ -663,14 +707,6 @@ anova(m4.1, m4.2)
 
 car::Anova(m4.2)
 
-# 
-plot_model(m4.2, type = "pred", terms = c( "Highway_m_log"),  show.data=F, 
-           jitter = 0, 
-           title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("Highway distance", "FDiv")) +
-  geom_point(data = Benthic, 
-             mapping = aes(x = Highway_m_log, y = FDiv),  
-             fill= "#0072B2", size=2, shape=21)
 
 
 #### -> R2 ----
@@ -689,12 +725,6 @@ car::Anova(m4.2)
 R2_FDiv1 <- r2glmm::r2beta(m4.2,  partial = T, data = Benthic)
 R2_FDiv1
 plot(R2_FDiv1)
-
-# save results
-# write.csv(MuMIn::r.squaredGLMM(FE_m4),  file = "Results/Mod_R2_FDiv.csv")
-# write.csv(R2,  file = "Results/R2_part_FDiv.csv")
-# write.csv(Anova(m_FDiv),  file = "Results/LMM_FDiv.csv")
-# write.csv(coef(summary(m_FDiv)),  file = "Results/summary_FDiv.csv")
 
 
 ### Mod2: Water properties----
@@ -786,6 +816,25 @@ R2_FDiv2
 plot(R2_FDiv2)
 
 
+### save partial R2 ----
+
+R2_FDiv <- rbind(as.data.frame(R2_FDiv1), as.data.frame(R2_FDiv2)) %>% 
+  rename(Variables=Effect) %>% 
+  dplyr::select(Variables, Rsq) %>% 
+  filter(!Variables=="Model") %>% 
+  mutate(Variables=recode_factor(Variables, 
+                                 Highway_m_log="Highway_m", Agric_m_log ="Agric_m", 
+                                 Waste.ef1="Waste", Gravel_eff="Gravel",
+                                 "sqrt(Macrophyte_biomass)"="Macrophytes", Fish_abundance ="Fish")) %>% 
+  mutate(Variables=fct_relevel(Variables, c("Agric_m", "Highway_m", "Gravel", "Waste", 
+                                            "Water_PC1", "Water_PC2", "Water_PC3",
+                                            "Macrophytes", "Fish"))) %>% 
+  arrange(Variables)
+
+
+R2_FDiv
+write.csv(R2_FDiv, "Results/FDiv_R2.csv")
+
 
 
 
@@ -854,12 +903,6 @@ car::Anova(m5.2)
 R2_FDis1 <- r2glmm::r2beta(m5.2,  partial = T, data = Benthic)
 R2_FDis1
 plot(R2_FDis1)
-
-# save results
-# write.csv(MuMIn::r.squaredGLMM(FE_m4),  file = "Results/Mod_R2_FDis.csv")
-# write.csv(R2,  file = "Results/R2_part_FDis.csv")
-# write.csv(Anova(m_FDis),  file = "Results/LMM_FDis.csv")
-# write.csv(coef(summary(m_FDis)),  file = "Results/summary_FDis.csv")
 
 
 ### Mod2: Water properties----
@@ -935,3 +978,23 @@ car::Anova(m5.4)
 R2_FDis2 <- r2glmm::r2beta(m5.4,  partial = T, data = Benthic)
 R2_FDis2
 plot(R2_FDis2)
+
+### save partial R2 ----
+
+R2_FDis <- rbind(as.data.frame(R2_FDis1), as.data.frame(R2_FDis2)) %>% 
+  rename(Variables=Effect) %>% 
+  dplyr::select(Variables, Rsq) %>% 
+  filter(!Variables=="Model",
+         !Variables=="System_typePond", !Variables=="System_typeLake") %>% 
+  mutate(Variables=recode_factor(Variables, 
+                                 Highway_m_log="Highway_m", Agric_m_log ="Agric_m", 
+                                 Waste.ef1="Waste", Gravel_eff="Gravel",
+                                 "sqrt(Macrophyte_biomass)"="Macrophytes", Fish_abundance ="Fish")) %>% 
+  mutate(Variables=fct_relevel(Variables, c("Agric_m", "Highway_m", "Gravel", "Waste", 
+                                            "Water_PC1", "Water_PC2", "Water_PC3",
+                                            "Macrophytes", "Fish"))) %>% 
+  arrange(Variables)
+
+
+R2_FDis
+write.csv(R2_FDis, "Results/FDis_R2.csv")

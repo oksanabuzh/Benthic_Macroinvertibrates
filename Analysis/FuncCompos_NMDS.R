@@ -64,43 +64,60 @@ names(Benth_PC)
 
 
 # PERMANOVA----
-##Mod1-----
+
 PERM_mod1 <- adonis2(comp ~ 
-                      System_type +
-                       Waste.effluent + Gravel_eff + Agric_m_log + Highway_m_log ,
-                      # strata = Benth_PC$System_id, 
-                     # strata = Benth_PC$System_id:Benth_PC$Year,  
-                      strata = Benth_PC$Random_effects, 
-                                data=Benthic,
-                          permutations = 1000, method = "bray")
+                  # System_type +
+                  Agric_m_log   + Highway_m_log  + Gravel_ef +  Waste.ef,
+                     data=Benthic,
+                   permutations = 1000, method = "bray")
 
 PERM_mod1
 
 # save
+write.csv(PERM_mod1 , file="Results/PERMAN_Mod1.csv")
 
-#library(openxlsx)
-# write.xlsx(adonis1 , file="adonis1.xlsx")
-write.csv(PERM_mod1 , file="Results/PERM_mod1.csv")
-
-##Mod2-----
 PERM_mod2 <- adonis2(comp ~ 
-               # System_type +
-               #  Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
-                 Agric_m_log + Highway_m_log +Waste.effluent + Gravel_eff +
-                  Water_PC1 + Water_PC2 + Water_PC3 +
-                  Macrophyte_biomass + Fish_abundance ,
-                 # strata = Benth_PC$System_id, 
-                     # strata = Benth_PC$System_id:Benth_PC$Year,  
-                     # strata = Benth_PC$Random_effects, 
-                     data=Benthic,
+                        Water_PC1 + Water_PC2 + Water_PC3 +
+                       Macrophyte_biomass + Fish_abundance ,
+                       data=Benthic,
                      permutations = 1000, method = "bray")
 
 PERM_mod2
+
 # save
-write.csv(PERM_mod2 , file="Results/PERM_mod2.csv")
+write.csv(PERM_mod2 , file="Results/PERMAN_Mod2.csv")
 
+## R2 coefficients----
 
-# Plot----
+R2_mod1 <- as.data.frame(PERM_mod1) %>%
+  mutate (Variables = rownames(PERM_mod1)) %>% 
+  dplyr::select(Variables, R2) %>% 
+  filter(!Variables==c("Residual", "Total"))
+
+R2_mod2 <- as.data.frame(PERM_mod2) %>%
+  mutate (Variables = rownames(PERM_mod2)) %>% 
+  dplyr::select(Variables, R2) %>% 
+  filter(!Variables==c("Residual"),
+         !Variables==c("Total"))
+
+FuncComp_R2 <- rbind(R2_mod1, R2_mod2) %>% 
+  mutate(Variables=recode_factor(Variables, 
+                                 Macrophyte_biomass="Macrophytes",
+                                 Waste.ef="Waste",
+                                 Gravel_ef="Gravel",
+                                 Highway_m_log="Highway_m",
+                                 Agric_m_log ="Agric_m",
+                                 Fish_abundance ="Fish")) %>% 
+  mutate(Variables=fct_relevel(Variables, c("Agric_m", "Highway_m", "Gravel", "Waste", 
+                                            "Water_PC1", "Water_PC2", "Water_PC3",
+                                            "Macrophytes", "Fish"))) %>% 
+  arrange(Variables)
+
+FuncComp_R2
+# save
+write.csv(FuncComp_R2 , file="Results/FuncComp_R2.csv", row.names=TRUE)
+
+# Plot---- 
 ### envfit----
 # get coordinates
 fit <- envfit(nmds1 ~  
