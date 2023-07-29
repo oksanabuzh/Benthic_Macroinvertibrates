@@ -85,10 +85,11 @@ write.csv(PERM_mod1 , file="Results/PERM_mod1.csv")
 ##Mod2-----
 PERM_mod2 <- adonis2(comp ~ 
                # System_type +
-                 Waste.effluent + Gravel_eff + Agric_m_log + Highway_m_log +
+               #  Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
+                 Agric_m_log + Highway_m_log +Waste.effluent + Gravel_eff +
                   Water_PC1 + Water_PC2 + Water_PC3 +
                   Macrophyte_biomass + Fish_abundance ,
-                   # strata = Benth_PC$System_id, 
+                 # strata = Benth_PC$System_id, 
                      # strata = Benth_PC$System_id:Benth_PC$Year,  
                      # strata = Benth_PC$Random_effects, 
                      data=Benthic,
@@ -99,12 +100,13 @@ PERM_mod2
 write.csv(PERM_mod2 , file="Results/PERM_mod2.csv")
 
 
-# envfit----
-
-fit <- envfit(nmds1 ~ # System_type +
-                Waste.effluent + Gravel_eff + Agric_m_log + Highway_m_log +
+# Plot----
+### envfit----
+# get coordinates
+fit <- envfit(nmds1 ~  
+                Agric_m_log + Highway_m_log +Waste.effluent + Gravel_eff +
                 Water_PC1 + Water_PC2 + Water_PC3 +
-                Macrophyte_biomass + Fish_abundance , data=Benthic, perm=1000) #
+                Macrophyte_biomass + Fish_abundance, data=Benthic, perm=1000) #
 
 
 
