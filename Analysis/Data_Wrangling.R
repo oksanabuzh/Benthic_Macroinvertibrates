@@ -73,12 +73,13 @@ Benth_aver <- Benth %>%
   group_by(System_id) %>%
   summarise_if(is.numeric, mean, na.rm = TRUE) %>% 
   dplyr::select(-System_id, -Area_m2,
-         -Abund, -SR, -H)
+         -Abund, -SR, -H, 
+         -Depth_cm, -Solid_waste, -Highway_eff)
 
 str(Benth_aver)
+names(Benth_aver)
 
-
-corl <- round(cor(Benth_aver, use="pairwise.complete.obs", method = c("pearson")),2)
+corl <- round(cor(Benth_aver[,1:15], use="pairwise.complete.obs", method = c("pearson")),2)
 corl
 
 write.csv(corl, "Results/correlation.csv",  row.names = T)
@@ -91,8 +92,9 @@ write.csv(corl, "Results/correlation.csv",  row.names = T)
 library(ggcorrplot)
 x11(height=9,width=8.5)
 ggcorrplot(corl, hc.order = F, type = "lower",
-           lab = TRUE, lab_size = 2, tl.cex = 9,
+           lab = TRUE, lab_size = 2.5, tl.cex = 11, lab_col = "black",
            colors = c("red", "white", "blue"))
+
 
 library(corrplot)
 x11(height=9,width=8.5)

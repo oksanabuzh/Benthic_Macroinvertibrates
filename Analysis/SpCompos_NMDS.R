@@ -8,7 +8,9 @@ library(vegan)
 
 # Data
 
-func_comp <- read_csv ( "Data/FuncComp.csv")
+sp_comp <- read_csv ( "Data/Com_composition.csv")
+str(sp_comp)
+names(sp_comp)
 
 Benth_dat <- read_csv ("Data/Benth_PCA2.csv")
 
@@ -21,69 +23,55 @@ Benthic <- Benth_dat %>%
          Highway_m_log=log(Highway_m),
          Macroph_sqrt=sqrt(Macrophyte_biomass))
 
-str(func_comp)
-names(func_comp)
-compos <-func_comp [,2:36] 
+str(sp_comp)
+names(sp_comp)
+compos <-sp_comp [,2:142] 
 str(compos)
 names(compos)
 
-# rename some traits
-comp <- compos %>% 
-  rename(RESP_sp=RESP_spi, 
-         RLC_mult=RLC_mlt, RLC_flex=RLC_flx,
-         "<0.25"=BodSz_0.25, 
-         "0.25-0.5"=BodSz_0.25_0.5,
-         "0.5-1"= BodSz_0.5_1,
-         "1-2"=BodSz_1_2,
-         "2-4"=BodSz_2_4,
-         "4-8"=BodSz_4_8,
-         ">8"=BodSz_8_,
-         REPR_ovo=REP_ovo, REPR_fie=REP_fie, REPR_cie=REP_cie, REPR_fic=REP_fic, 
-         REPR_frc=REP_frc, REPR_vec=REP_vec, REPR_tec=REP_tec, REPR_asex=REP_ase,
-         FG_gra=Feed_Gra, FG_min=Feed_Min, FG_xyl=Feed_Xyl, FG_shr=Feed_Shr, 
-         FG_gat=Feed_Gat, FG_aff=Feed_Aff, FG_pff=Feed_Pff, FG_pred=Feed_Pre, FG_par=Feed_Par)
-
-
-names(comp)
-
 # NMDS analysis----
 
-nmds1<-metaMDS(comp, distance="bray",k=2,trymax=100)
+nmds1<-metaMDS(compos, distance="bray",k=2,trymax=100)
 nmds1 # the stress value shows how easy it was to condense multidimensional data into two dimensional space, below 0.2 is generally good
 scores(nmds1)
 
 
+data <- read_csv ("Data/Benth_PCA2.csv")
+str(data)
+
 
 # PERMANOVA----
 
-PERM_mod1 <- adonis2(comp ~ 
-                  # System_type +
+PERM_mod1 <- adonis2(compos ~ #  System_type +
                   Agric_m_log   + Highway_m_log  + Gravel_ef +  Waste.ef,
                      data=Benthic,
+                #  strata=Benthic$System_id,
                    permutations = 1000, method = "bray")
 
 PERM_mod1
 
 # save
-write.csv(PERM_mod1 , file="Results/PERMAN_Mod1.csv")
+write.csv(PERM_mod1 , file="Results/SpComp_PERMANOVA_Mod1.csv")
 
-PERM_mod2 <- adonis2(comp ~ 
+PERM_mod2 <- adonis2(compos ~ #System_type +
                         Water_PC1 + Water_PC2 + Water_PC3 +
                        Macrophyte_biomass + Fish_abundance ,
                        data=Benthic,
+                   # strata=Benthic$System_id,
                      permutations = 1000, method = "bray")
 
 PERM_mod2
 
 # save
-write.csv(PERM_mod2 , file="Results/PERMAN_Mod2.csv")
+write.csv(PERM_mod2 , file="Results/SpComp_PERMANOVA_Mod2.csv")
 
 ## R2 coefficients----
 
 R2_mod1 <- as.data.frame(PERM_mod1) %>%
   mutate (Variables = rownames(PERM_mod1)) %>% 
   dplyr::select(Variables, R2) %>% 
-  filter(!Variables==c("Residual", "Total"))
+  filter(!Variables=="Residual",
+         !Variables=="Total")
 
 R2_mod2 <- as.data.frame(PERM_mod2) %>%
   mutate (Variables = rownames(PERM_mod2)) %>% 
@@ -91,7 +79,8 @@ R2_mod2 <- as.data.frame(PERM_mod2) %>%
   filter(!Variables==c("Residual"),
          !Variables==c("Total"))
 
-FuncComp_R2 <- rbind(R2_mod1, R2_mod2) %>% 
+SpComp_R2 <- rbind(R2_mod1, R2_mod2) %>% 
+  filter(!Variables==c("System_type")) %>% 
   mutate(Variables=recode_factor(Variables, 
                                  Macrophyte_biomass="Macrophytes",
                                  Waste.ef="Waste",
@@ -104,9 +93,9 @@ FuncComp_R2 <- rbind(R2_mod1, R2_mod2) %>%
                                             "Macrophytes", "Fish"))) %>% 
   arrange(Variables)
 
-FuncComp_R2
+SpComp_R2
 # save
-write.csv(FuncComp_R2 , file="Results/FuncComp_R2.csv", row.names=TRUE)
+write.csv(SpComp_R2 , file="Results/SpComp_R2.csv", row.names=TRUE)
 
 # Plot---- 
 ### envfit----
@@ -114,7 +103,8 @@ write.csv(FuncComp_R2 , file="Results/FuncComp_R2.csv", row.names=TRUE)
 fit <- envfit(nmds1 ~  
                 Agric_m_log + Highway_m_log +Waste.effluent + Gravel_eff +
                 Water_PC1 + Water_PC2 + Water_PC3 +
-                Macrophyte_biomass + Fish_abundance, data=Benthic, perm=1000) #
+                Macrophyte_biomass + Fish_abundance, data=Benthic, perm=1000,
+              strata=Benthic$Random_effects) #
 
 
 
@@ -136,7 +126,7 @@ sig.var.scrs <- subset(var.scrs #, pval<=0.07
                                  Water_PC3 ="PC3",
                                  Fish_abundance ="Fish"))
 
-write.csv(var.scrs, file="Results/envfit_mod.csv")
+# write.csv(var.scrs, file="Results/envfit_mod.csv")
 
 
 # Plot NMDS----
@@ -151,7 +141,7 @@ par(mai=c(1, 1, 0.2, 0.2), mgp=c(1.8,0.5,0), cex.lab=1, cex.axis=1, pch=21, cex=
 plot(nmds1, type = "n")
 #points(nmds1, display = "sites",pch = 19, cex =1.2, col="gray")
 #points(nmds1, display = "species", col=col, pch = 19, cex = 0.8)
-orditorp(nmds1,display="species", col=col,air=0.0001)
+orditorp(nmds1,display="species", col="blue", air=0.0001, cex=0.5)
 plot(fit, col="black")
 
 #### using ggplot -------- 
@@ -178,26 +168,16 @@ species.scores$species
 
 
 
-# Assign colours for the traits:
 
 names(comp)
-
-col= c("blue", "blue", "blue", "blue","blue",
-         "limegreen", "limegreen",  
-       "orange", "orange", "orange", "orange",
-       "red", "red", "red", "red","red","red","red","red",
-       "darkmagenta", "darkmagenta", "darkmagenta", "darkmagenta","darkmagenta","darkmagenta","darkmagenta",
-       "darkcyan", "darkcyan", "darkcyan", "darkcyan","darkcyan","darkcyan","darkcyan","darkcyan", "darkcyan"
-      )
-
 
 p1  <- ggplot(data = sites.scores, 
                 aes(x = NMDS1, y = NMDS2)) +
   geom_vline(xintercept = 0, col="grey", linetype="dashed")+
   geom_hline(yintercept = 0, col="grey", linetype="dashed")+
   scale_shape_manual(values=c( 19, 1))+ 
-  geom_point (data = species.scores, size = 2, pch=19, colour= col) + #, colour=Col, fill=Col
-  geom_text_repel (data=species.scores,aes(x=NMDS1,y=NMDS2,label=species), size = 3.6, colour= col) + 
+  geom_point (data = species.scores, size = 2, pch=19, colour= "grey") + #, colour=Col, fill=Col
+  geom_text_repel (data=species.scores,aes(x=NMDS1,y=NMDS2,label=species), size = 3.6, colour= "black") + 
   theme(axis.title = element_text(size = 13, face = "bold", colour = "black"), 
         panel.background = element_blank(), panel.border = element_rect(fill = NA, 
                               colour = "grey30", size=0.5), 
@@ -215,8 +195,8 @@ p2  <- ggplot(data = sites.scores,
   geom_vline(xintercept = 0, col="grey", linetype="dashed")+
   geom_hline(yintercept = 0, col="grey", linetype="dashed")+
   scale_shape_manual(values=c( 19, 1))+ 
-  geom_point (data = species.scores, size = 2, pch=19, colour= col) + 
-  geom_text_repel (data=species.scores,aes(x=NMDS1,y=NMDS2,label=species), size = 3.6, colour= col) + 
+  geom_point (data = species.scores, size = 2, pch=19, colour= "grey") + 
+  geom_text_repel (data=species.scores,aes(x=NMDS1,y=NMDS2,label=species), size = 3.6, colour= "grey") + 
   theme(axis.title = element_text(size = 13, face = "bold", colour = "black"), 
         panel.background = element_blank(), panel.border = element_rect(fill = NA, 
                                                                         colour = "grey30", size=0.5), 
@@ -230,6 +210,14 @@ p2  <- ggplot(data = sites.scores,
   guides(fill=guide_legend("System Type"))
 
 p2
+
+## Add significant predictors----
+
+coord_cont <- as.data.frame(scores(fit, "vectors")) * ordiArrowMul(fit, 
+                                          rescale=TRUE, fill = 1)
+
+
+
 
 # Create scores with the standard length for the posthoc plotting of arrows of the same size
 # for this we would use raw vectors from envfit and not scores 
@@ -261,25 +249,24 @@ coord_cont_ <- coord_cont  %>%
 # rescale  all arrows to fill an ordination plot, where fill =  shows proportion of plot to be filled by the arrows
 
 coord_cont_standrd  <- coord_cont_%>% 
-  mutate(stand.NMDS1=stand.NMDS1 * ordiArrowMul(fit, rescale=TRUE, fill = 0.2))%>% 
-  mutate(stand.NMDS2=stand.NMDS2 * ordiArrowMul(fit, rescale=TRUE, fill = 0.2))
+  mutate(stand.NMDS1=stand.NMDS1 * ordiArrowMul(fit, rescale=TRUE, fill = 0.7))%>% 
+  mutate(stand.NMDS2=stand.NMDS2 * ordiArrowMul(fit, rescale=TRUE, fill = 0.7))
 
 coord_cont_standrd
 
 
 
 
-
 p2+
   geom_segment(aes(x = 0, y = 0, xend = NMDS1, yend = NMDS2), 
-               data = coord_cont_standrd, linewidth =0.7, alpha = 1, 
+               data = coord_cont_, linewidth =0.7, alpha = 1, 
                colour = "black", 
                arrow = arrow(length = unit(0.03, "npc")))
 
 p3 <- ggplot(data = sites.scores, 
              aes(x = NMDS1, y = NMDS2)) +
- # stat_ellipse(aes(colour=System.Type), alpha=.3, type='t',linewidth =0.1, geom="path")+
- # stat_ellipse(aes(fill=System.Type), alpha=.1,type='t',linewidth =1, geom="polygon")+
+ stat_ellipse(aes(colour=System.Type), alpha=.3, type='t',linewidth =0.1, geom="path")+
+ stat_ellipse(aes(fill=System.Type), alpha=.1,type='t',linewidth =1, geom="polygon")+
   geom_vline(xintercept = 0, col="grey", linetype="dashed")+
   geom_hline(yintercept = 0, col="grey", linetype="dashed")+
   #
@@ -289,8 +276,9 @@ p3 <- ggplot(data = sites.scores,
                arrow = arrow(length = unit(0.03, "npc")))+
 #
   scale_shape_manual(values=c( 19, 1))+ 
-  geom_point (data = species.scores, size = 2, pch=19, colour= col) + 
-  geom_text_repel (data=species.scores,aes(x=NMDS1,y=NMDS2,label=species), size = 3.6, colour= col) + 
+ # geom_point (data = species.scores, size = 2, pch=19, colour= "blue") + 
+  geom_text_repel (data=species.scores,aes(x=NMDS1,y=NMDS2,label=species), 
+                   size = 3.2, colour= "deepskyblue4") + 
   theme(axis.title = element_text(size = 13, face = "bold", colour = "black"), 
         panel.background = element_blank(), panel.border = element_rect(fill = NA, 
                                                                         colour = "grey30", size=0.5), 
@@ -303,11 +291,14 @@ p3 <- ggplot(data = sites.scores,
   labs(col="System Type")+
   guides(fill=guide_legend("System Type"))
 
-p3 + xlim(-1,0.9)+ylim(-0.95,0.7)
+p3 + 
+  xlim(-1.3,1.5)+ylim(-1.1,1)
 
 # add labels
-p3 + geom_text(data = coord_cont_, 
-            aes(x = NMDS1, y = NMDS2, label = Variables), 
+p3 + geom_text(data = coord_cont_standrd, 
+            aes(x =stand.NMDS1, y = stand.NMDS2, label = Variables), 
             colour = "black", fontface = "bold", size = 4 ,
-            vjust=0, hjust=0 # adjust text positions
-            )
+            vjust=1, hjust=0.1 # adjust text positions
+            )+
+  xlim(-1.5,1.5)+ylim(-1.5,1.5)
+
