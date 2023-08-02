@@ -42,10 +42,10 @@ str(data)
 
 # PERMANOVA----
 
-PERM_mod1 <- adonis2(compos ~ #  System_type +
+PERM_mod1 <- adonis2(compos ~ # System_type +
                   Agric_m_log   + Highway_m_log  + Gravel_ef +  Waste.ef,
                      data=Benthic,
-                #  strata=Benthic$System_id,
+                 # strata=Benthic$System_id,
                    permutations = 1000, method = "bray")
 
 PERM_mod1
@@ -53,11 +53,11 @@ PERM_mod1
 # save
 write.csv(PERM_mod1 , file="Results/SpComp_PERMANOVA_Mod1.csv")
 
-PERM_mod2 <- adonis2(compos ~ #System_type +
+PERM_mod2 <- adonis2(compos ~ # System_type +
                         Water_PC1 + Water_PC2 + Water_PC3 +
                        Macrophyte_biomass + Fish_abundance ,
                        data=Benthic,
-                   # strata=Benthic$System_id,
+                    # strata=Benthic$System_id,
                      permutations = 1000, method = "bray")
 
 PERM_mod2
