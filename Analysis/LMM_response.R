@@ -123,9 +123,17 @@ m1.2 <- lmer(Abund_log ~  # System_type +
 library(MuMIn)
 AICc(m1.1, m1.2)
 
+anova(m1.1, m1.2)
 # We select model m1.2 (without "System type")
 
 car::Anova(m1.2)
+# drop1(m1.2, test="Chi")
+
+write.csv(car::Anova(m1.2),  file = "Results/Abund_LMM.csv")
+# write.csv(drop1(m1.2, test="Chi"),  file = "Results/Abund_LMM.csv")
+
+# write.csv(coef(summary(m1.2)),  file = "Results/Abund_summary.csv")
+
 
 #### -> plot----
 plot_model(m1.2, type = "pred", terms = c( "Highway_m_log"),  show.data=F, 
@@ -191,7 +199,7 @@ qqline(resid(m1.3))
 performance::check_collinearity(m1.3)
 
 summary(m1.3)
-car::Anova(m1.3)
+# car::Anova(m1.3)
 
 ##### -> remove System_type----
 # model selection:
@@ -210,6 +218,8 @@ m1.4 <- lmer(Abund_log ~
 
 library(MuMIn)
 AICc(m1.3, m1.4)
+
+anova(m1.3, m1.4)
 
 # We select model m1.4 (without "System type")
 
@@ -346,6 +356,8 @@ qqline(resid(m2.2))
 check_outliers(m2.2)
 
 
+anova(m2.1, m2.2)
+
 summary(m2.2)
 car::Anova(m2.2)
 
@@ -399,8 +411,9 @@ performance::check_convergence(m2.4)
 
 library(MuMIn)
 AICc(m2.3, m2.4)
+anova(m2.3, m2.4)
 
-# Model m2.4 did not differ significantly from model 2.3, but "System type" is significumt, thus we select for model 2.3 
+# Model m2.4 did not differ significantly from model 2.3, but "System type" is significant, and the likelihood test is marginally significant, thus we select for model 2.3 
 
 car::Anova(m2.3)
 

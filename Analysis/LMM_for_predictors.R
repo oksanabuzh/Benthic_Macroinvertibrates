@@ -60,7 +60,7 @@ m1.1 <- lmer(log(Depth_cm) ~ System_type +
                (1|System_id:Year:Country), data = Benthic)
 
 ## assumptions 
-plot(m1.1) # heteroscedasticity  ->  transform response
+plot(m1.1) 
 qqnorm(resid(m1.1))
 qqline(resid(m1.1))
 
@@ -143,7 +143,7 @@ check_outliers(m3)
 qqnorm(resid(m3))
 qqline(resid(m3))
 
-Benthic[c(40,41, 42), "Sampling_site"]
+Benthic[c(40, 42), "Sampling_site"]
 
 m3 <- lmer(Agric_m_log ~ System_type +
              (1|System_id:Year:Country), data = Benthic %>% 
@@ -280,16 +280,29 @@ ggplot(Benthic, aes(x = Waste.ef, y = Water_PC1)) +
 ##### -> remove System_type----
 
 m5 <- lmer(Water_PC1_log ~ 
+             System_type +
+             Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
+             (1|System_id:Year:Country), 
+           data = Benthic, REML=F)
+
+m5_ <- lmer(Water_PC1_log ~ 
             # System_type +
              Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
              (1|System_id:Year:Country), 
-           data = Benthic)
+           data = Benthic,  REML=F)
 
-# Plot effects:
+anova(m5, m5_)
+
+library(MuMIn)
+AICc(m5, m5_)
+
+car::Anova(m5_)
+
+# Plot the effects:
 
 # Highway distance
 
-plot_model(m5, type = "pred", terms = c( "Highway_m_log"),  
+plot_model(m5_, type = "pred", terms = c( "Highway_m_log"),  
            show.data=F, jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
            axis.title = c("Highway distance", "Water PC1")) +
@@ -359,16 +372,19 @@ ggplot(Benthic[-16, ],
 
 ##### -> remove System_type----
 
-m6 <- lmer(Water_PC2 ~ #System_type +
+
+
+m6_ <- lmer(Water_PC2 ~ #System_type +
              Waste.ef + Gravel_ef + Agric_m_log +  Highway_m_log +
              (1|System_id:Year:Country), 
-           data = Benthic[-16, ]) # remove outlier
-
-plot(m6) 
-check_heteroscedasticity(m6)
+           data = Benthic[-16, ])
 
 
-car::Anova(m6)
+anova(m6, m6_)
+
+
+car::Anova(m6_)
+
 
 # Gravel_ef
 emmeans(m6, list(pairwise ~ Gravel_ef), adjust = "none", 
@@ -385,9 +401,9 @@ ggplot(Benthic[-16, ],
 
 
 # Waste.ef
-emmeans(m6, list(pairwise ~ Waste.ef), adjust = "none", 
+emmeans(m6_, list(pairwise ~ Waste.ef), adjust = "none", 
         Letters = letters )
-cld(emmeans(m6, list(pairwise ~ Waste.ef)),  
+cld(emmeans(m6_, list(pairwise ~ Waste.ef)),  
     type="response", Letters = letters, adjust = "none")
 
 ggplot(Benthic[-16,], 
@@ -396,18 +412,6 @@ ggplot(Benthic[-16,],
   geom_boxplot(notch=F, alpha = 0, color = "black") +
   labs(x="Waste effluent", y="Water PC2")+
   theme_bw()
-
-
-# plot Highway
-
-plot_model(m6, type = "pred", terms = c( "Highway_m_log"),  
-           show.data=F, jitter = 0, 
-           title = "", dot.alpha=0.8, line.size=0.1, 
-           axis.title = c("Highway distance", "Water PC2")) +
-  geom_point(data = Benthic[-16,], 
-             mapping = aes(x = Highway_m_log, y =Water_PC2 ),  
-             fill= "#0072B2", size=2, shape=21)
-
 
 
 
@@ -483,14 +487,17 @@ ggplot(Benthic[-16,],
 
 ##### -> remove System_type----
 
-m7 <- lmer(Water_PC3 ~ 
+m7_ <- lmer(Water_PC3 ~ 
             # System_type +
              Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
              (1|System_id:Year:Country), 
            data = Benthic[-16,])
 
-car::Anova(m7)
 
+
+anova(m7, m7_)
+
+car::Anova(m7_)
 
 ## 4) Macrophytes----
 ### 4.1) Mod1: HI----
@@ -552,11 +559,13 @@ ggplot(Benthic,
 
 ##### -> remove System_type----
 
-m8.1 <- lmer(Macroph_log ~ 
+
+m8.1_ <- lmer(Macroph_log ~ 
               # System_type +
                Waste.ef + Gravel_ef + Agric_m_log + Highway_m_log +
                (1|System_id:Year:Country), data = Benthic)
 
+anova(m8.1, m8.1_)
 
 car::Anova(m8.1)
 
@@ -602,16 +611,20 @@ car::Anova(m8.2)
 
 ####->remove System_type----
 
-m8.2 <- lmer(Macroph_log ~ 
+m8.2_ <- lmer(Macroph_log ~ 
              #  System_type +
                Water_PC1 + Water_PC2 + Water_PC3 +
                (1|System_id:Year:Country), data = Benthic)
+
+anova(m8.2, m8.2_)
+
 
 car::Anova(m8.2)
 
 #Plot effcets
 # Water_PC2
-plot_model(m8.2, type = "pred", terms = c("Water_PC2"),  
+plot_model(update(m8.2, . ~ .-System_type), # for the plot we need to remove the categorical variable
+           type = "pred", terms = c("Water_PC2"),  
            show.data=F, 
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
@@ -621,7 +634,8 @@ plot_model(m8.2, type = "pred", terms = c("Water_PC2"),
              fill= "#0072B2", size=2, shape=21)
 
 # Water_PC3
-plot_model(m8.2, type = "pred", terms = c("Water_PC1"),  
+plot_model(update(m8.2, . ~ .-System_type), # for the plot we need to remove the categorical variable
+           type = "pred", terms = c("Water_PC1"),  
            show.data=F, 
            jitter = 0, 
            title = "", dot.alpha=0.8, line.size=0.1, 
@@ -694,6 +708,7 @@ m9.2 <- lmer(Fish_log ~ # System_type +
 ### multicolinearity
 performance::check_collinearity(m9.2)
 
+anova(m9.1, m9.2)
 
 summary(m9.2)
 car::Anova(m9.2)
@@ -742,6 +757,8 @@ m9.4 <- lmer(Fish_log ~ # System_type +
                Water_PC1 + Water_PC2 + Water_PC3 +
                sqrt(Macrophyte_biomass) +
                (1|System_id:Year:Country), data = Benthic)
+
+anova(m9.3, m9.4)
 
 summary(m9.4)
 car::Anova(m9.4)
